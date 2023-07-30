@@ -1,53 +1,37 @@
 #include "send_response.h"
 #include "sql_constant.h"
 #include "structure_message.h"
+#include "unix_wrapper.h"
 
-void _send_b_res(int sd, int sql, char relay_status)
+void _send_a_res(int sd)
 {
-    if(sql==SQL_SUCCESS){
-        char buffer[3] = {'1', relay_status, '&'};
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
-    }
-    else{
-        char buffer[3] = {'1', RELAY_FAIL, '&'};
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
+    char res[2] = {MESSAGE_A_START, '&'};
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
     }
     return;
 }
 
-void _send_c_res(int sd, int sql)
+void _send_b_res(int sd, char relay_status)
 {
-    if(sql==SQL_SUCCESS){
-        char buffer[2] = {'2', '0'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
+    char res[3] = {MESSAGE_B_START, relay_status, '&'};
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
     }
-    else if(sql==SQL_ERROR){
-        char buffer[2] = {'2', '2'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
-    }
-    else if(sql==SQL_DUPLICATED_ID){
-        char buffer[2] = {'2', '1'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
+    return;
+}
+
+void _send_c_res(int sd, char safe_m_err)
+{
+    char res[2] = {MESSAGE_C_START, safe_m_err};
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
     }
     return;
 }

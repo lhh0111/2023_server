@@ -1,7 +1,7 @@
 #pragma once
 #pragma pack(push, 1)
 
-#define RESPONSE_SQL_ERROR "Z"
+#define RESPONSE_SQL_ERROR "Z&"
 
 #define U_ID_LENGTH 8
 #define U_ID_LENGTH_S "8"
@@ -24,6 +24,7 @@
 #define MESSAGE_J 9
 
 #define MESSAGE_A_START '0'
+#define MESSAGE_A_LAST '&'
 #define MESSAGE_B_START '1'
 #define MESSAGE_C_START '2'
 #define MESSAGE_D_START '3'

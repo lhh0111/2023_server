@@ -71,9 +71,11 @@ void _sql_b_req(int sd, struct MessageBRequest * req, char * relay_req)
 
     mysql_close(conn);
     mysql_library_end();
+
+    return;
 }
 
-int _sql_c_req(int sd, struct MessageCRequest *req)
+char _sql_c_req(int sd, struct MessageCRequest *req)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, USER_ID_LENGTH);

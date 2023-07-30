@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,9 +45,8 @@ int main(int argc, char* argv[])
    struct sockaddr_in serv_adr, clnt_adr;
 
    pid_t pid;
-   struct sigaction act;
    socklen_t adr_sz;
-   int str_len, state;
+   int str_len;
    char buf[BUF_SIZE];
    if(argc != 2)
    {
@@ -53,10 +54,8 @@ int main(int argc, char* argv[])
       exit(1);
    }
 
-   act.sa_handler = read_childproc; // 좀비 프로세스 생성을 막기위한 코드 
-   sigemptyset(&act.sa_mask);
-   act.sa_flags = 0;
-   state = sigaction(SIGCHLD, &act, 0);
+   signal(SIGCHLD, read_childproc);
+
    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
    memset(&serv_adr, 0, sizeof(serv_adr));
    serv_adr.sin_family = AF_INET;
@@ -117,8 +116,9 @@ void read_childproc(int sig)
 {
    pid_t pid;
    int status;
-   pid = waitpid(-1, &status, WNOHANG);
-   printf("removed proc id : %d \n", pid);
+   while((pid = waitpid(-1, &status, WNOHANG))> 0){
+      printf("removed proc id : %d \n", pid);
+   }
 }
 
 void error_handling(char* message)
@@ -222,21 +222,17 @@ void protocol_implementation(int sd, int message_type){
    }
    else if(message_type==MESSAGE_B){
       struct MessageBRequest req={{0}};
-      char relay_status=RELAY_FAIL;
       _get_req(sd, &req, sizeof(req));
-      req.U_ID[sizeof(req.U_ID)-1] = '\0';
-      int sqlerr = _sql_b_req(&req, &relay_status);
-      _send_b_res(sd, sqlerr, relay_status);
+
+      char relay_req;
+      _sql_b_req(sd, &req, &relay_req);
+      _send_b_res(sd, relay_req);
    }
    else if(message_type==MESSAGE_C){
       struct MessageCRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      req.id[sizeof(req.id)-1] = '\0';
-      req.pw[sizeof(req.pw)-1] = '\0';
-      puts(req.id);
-      puts(req.pw);
-      int sqlerr = _sql_c_req(&req);
-      _send_c_res(sd, sqlerr);
+      char safe_m_err = _sql_c_req(sd, &req);
+      _send_c_res(sd, safe_m_err);
    }
    else if(message_type==MESSAGE_D){
       struct MessageDRequest req={{0}};

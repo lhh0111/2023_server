@@ -11,6 +11,6 @@
 
 
 
-void _send_b_res(int sd, int sql, char relay_status);
-void _send_c_res(int sd, int sql);
+void _send_b_res(int sd, char relay_status);
+void _send_c_res(int sd, char safe_m_err);
 void _send_d_res(int sd, int sql, char * token);
