@@ -11,6 +11,7 @@
 #define USER_PW_LENGTH_S "16"
 
 #define TOKEN_SIZE 8
+#define TOKEN_SIZE_S "8"
 
 #define MESSAGE_A 0
 #define MESSAGE_B 1

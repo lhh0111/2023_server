@@ -1,19 +1,44 @@
 #include "sql_basic.h"
 #include "structure_message.h"
+#include "unix_wrapper.h"
 
 void error_occured(int sd, MYSQL * conn)
 {
-    if(mysql_errno(conn)!=0){
+    if(mysql_errno(conn)!=0){ // mysql_store_result()의 반환값이 NULL일 때, 정말 MYSQL 측의 에러인지, 아니면 이전 SQL문에 의한 정상적인 반환인지 판단하기 위한 조건문.
         fprintf(stderr, "%s, %d, %s\n", mysql_error(conn), mysql_errno(conn), mysql_sqlstate(conn));
         char res[] = RESPONSE_SQL_ERROR;
         char * temp = res;
         while(temp < res + sizeof(res)){
-            write(sd, temp, 1);
+            Write(sd, temp, 1);
             temp++;
         }
         mysql_close(conn);
         mysql_library_end();
         exit(1);
+    }
+}
+
+int Mysql_query(int sd, MYSQL * conn, const char *q)
+{
+    int n;
+    if((n = mysql_query(conn, q))!=0){
+        error_occured(sd, conn);
+        return n;
+    }
+    else{
+        return n;
+    }
+}
+
+MYSQL_RES * Mysql_store_result(int sd, MYSQL * conn)
+{
+    MYSQL_RES * result;
+    if((result = mysql_store_result(conn))==NULL){ // 이전 쿼리문이 result set을 주지 않는 쿼리문이거나, 오류가 났을 때 true
+        error_occured(sd, conn); // 만약 프로세스 종료 없이 이 함수에서 return한다면 이전 쿼리문의 특성에 의해 NULL이 반환된 것임.
+        return result;
+    }
+    else{
+        return result;
     }
 }
 
@@ -228,4 +253,62 @@ void insert_into_table_ID_PW(int sd, MYSQL * conn, const char * id, const char *
     mysql_query(conn, temp_query);
 
     error_occured(sd, conn);
+}
+
+bool check_valid_id_pw(int sd, MYSQL * conn, const char * id, const char * pw)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.ID_PW WHERE "ID_PW_COL_0_NAME" = '%s' AND "ID_PW_COL_1_NAME" = '%s'", id, pw);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    if(mysql_num_rows(result)==0){
+        mysql_free_result(result);
+        return false;
+    }
+    else{
+        mysql_free_result(result);
+        return true;
+    }
+}
+
+void create_table_LOGIN_TOKEN(int sd, MYSQL * conn)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS user_info.LOGIN_TOKEN ("LOGIN_TOKEN_COL_0_NAME" "LOGIN_TOKEN_COL_0_TYPE
+    ", "LOGIN_TOKEN_COL_1_NAME" "LOGIN_TOKEN_COL_1_TYPE
+    ", "LOGIN_TOKEN_COL_2_NAME" "LOGIN_TOKEN_COL_2_TYPE")");
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void delete_from_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM user_info.LOGIN_TOKEN WHERE "LOGIN_TOKEN_COL_0_NAME" = '%s'", id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO user_info.LOGIN_TOKEN VALUES('%s', '%s', now())", id, token_buffer);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
 }

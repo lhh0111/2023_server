@@ -56,3 +56,12 @@ void create_table_ID_PW(int sd, MYSQL * conn);
 bool check_duplicated_id_from_table_ID_PW(int sd, MYSQL * conn, const char * id);
 
 void insert_into_table_ID_PW(int sd, MYSQL * conn, const char * id, const char * pw);
+
+
+bool check_valid_id_pw(int sd, MYSQL * conn, const char * id, const char * pw);
+
+void create_table_LOGIN_TOKEN(int sd, MYSQL * conn);
+
+void delete_from_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id);
+
+void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer);

@@ -237,14 +237,14 @@ void protocol_implementation(int sd, int message_type){
    else if(message_type==MESSAGE_D){
       struct MessageDRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      char token[TOKEN_SIZE+1] = {0};
-      int sqlerr = _sql_d_req(&req, token, sizeof(token) - 1);
-      _send_d_res(sd, sqlerr, token);
+      char token_buffer[TOKEN_SIZE+1] = {0}; // string
+      char safe_m_err = _sql_d_req(&req, token_buffer, sizeof(token_buffer) - 1);
+      _send_d_res(sd, safe_m_err, token_buffer);
    }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      int sqlerr = _sql_j_req(&req);
+      char safe_m_err = _sql_j_req(&req);
    }
    /*
    else if(message_type==MESSAGE_C){
