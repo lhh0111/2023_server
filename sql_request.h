@@ -13,4 +13,5 @@
 
 void _sql_b_req(int sd, struct MessageBRequest * req, char * relay_req);
 char _sql_c_req(int sd, struct MessageCRequest *req);
-int _sql_d_req(struct MessageDRequest *req, char * token, int token_size);
+char _sql_d_req(int sd, struct MessageDRequest *req, char * token_buffer, int token_buffer_size);
+char _sql_j_req(int sd, struct MessageJRequest * req);

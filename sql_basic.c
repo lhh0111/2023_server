@@ -312,3 +312,92 @@ void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const 
 
     return;
 }
+
+bool check_valid_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.LOGIN_TOKEN WHERE ("LOGIN_TOKEN_COL_0_NAME" = '%s') AND ("LOGIN_TOKEN_COL_1_NAME" = '%s') AND ("LOGIN_TOKEN_COL_2_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 30 MINUTE) AND NOW())", id, token_buffer);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    if(mysql_num_rows(result)==0){
+        mysql_free_result(result);
+        return false;
+    }
+    else{
+        mysql_free_result(result);
+        return true;
+    }
+}
+
+void update_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1,"UPDATE user_info.LOGIN_TOKEN SET "LOGIN_TOKEN_COL_2_NAME"=now() WHERE "LOGIN_TOKEN_COL_0_NAME"='%s'", id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void create_table_POWER_TO_USER(int sd, MYSQL * conn)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS user_info.POWER_TO_USER("POWER_TO_USER_COL_0_NAME" "POWER_TO_USER_COL_0_TYPE", "POWER_TO_USER_COL_1_NAME" "POWER_TO_USER_COL_1_TYPE")");
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void delete_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_0_NAME" = '%s'", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void insert_into_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id, const char * id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO user_info.POWER_TO_USER VALUES('%s', '%s')", u_id, id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+// u_id의 멀티탭으로부터 30분 이내에 등록 요청이 왔는 지 확인하는 함수
+bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM power_info.REG WHERE ("REG_COL_0_NAME" = '%s') AND("REG_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 30 MINUTE) AND NOW())", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    if(mysql_num_rows(result)==0){
+        mysql_free_result(result);
+        return false;
+    }
+    else{
+        mysql_free_result(result);
+        return true;
+    }
+}

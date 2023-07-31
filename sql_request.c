@@ -164,7 +164,7 @@ char _sql_d_req(int sd, struct MessageDRequest *req, char * token_buffer, int to
     return safe_m_err;
 }
 
-int _sql_j_err(int sd, struct MessageJRequest * req)
+char _sql_j_req(int sd, struct MessageJRequest * req)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, USER_ID_LENGTH);
@@ -179,9 +179,6 @@ int _sql_j_err(int sd, struct MessageJRequest * req)
     u_id[sizeof(u_id) - 1] = '\0';
 
     
-
-    
-
     mysql_library_init(0, NULL, NULL);
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
@@ -194,50 +191,34 @@ int _sql_j_err(int sd, struct MessageJRequest * req)
 
     char safe_m_err = SAFE_M_SUCCESS;
     if(!id_exists){
-        safe_m_err = SQL_ID_NOT_EXISTS;
+        safe_m_err = SAFE_M_ID_NOT_EXISTS;
     }
-    else{
-        mysql_free_result(result);
+    else{ // check login token
+        create_table_LOGIN_TOKEN(sd,conn);
 
-        memset(temp_query, 0, sizeof(temp_query));
-        snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS user_info.LOGIN_TOKEN (id CHAR(8) NOT NULL, token CHAR(8) NOT NULL, time TIMESTAMP NOT NULL)");
-        temp_query[sizeof(temp_query) - 1] = '\0';
-        mysql_query(conn, temp_query);
-
-        memset(temp_query, 0, sizeof(temp_query));
-        snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.LOGIN_TOKEN WHERE (id = '%s') AND (token = '%s') AND (time BETWEEN DATE_SUB(NOW(), INTERVAL 30 MINUTE) AND NOW())", id, token);
-        temp_query[sizeof(temp_query) - 1] = '\0';
-        mysql_query(conn, temp_query);
-
-        result = mysql_store_result(conn);
-
-        if(mysql_num_rows(result)==0){
-            mysql_free_result(result);
-            sql_err = SQL_INVALID_TOKEN;
+        if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token)){
+            safe_m_err = SAFE_M_INVALID_TOKEN;
         }
         else{
-            mysql_free_result(result);
+            update_token_from_LOGIN_TOKEN(sd, conn, id);
 
-            memset(temp_query, 0, sizeof(temp_query));
-            snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS user_info.POWER_TO_USER(uniq_id CHAR(8) NOT NULL, id CHAR(8) NOT NULL)");
-            temp_query[sizeof(temp_query) - 1] = '\0';
-            mysql_query(conn, temp_query);
+            create_table_REG(sd, conn);
+            
+            if(check_sync_with_REG(sd, conn, u_id)){
+                create_table_POWER_TO_USER(sd, conn);
 
-            memset(temp_query, 0, sizeof(temp_query));
-            snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM user_info.POWER_TO_USER WHERE uniq_id = '%s'", u_id);
-            temp_query[sizeof(temp_query) - 1] = '\0';
-            mysql_query(conn, temp_query);
-
-            memset(temp_query, 0, sizeof(temp_query));
-            snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO user_info.POWER_TO_USER VALUES('%s', '%s')", u_id, id);
-            temp_query[sizeof(temp_query) - 1] = '\0';
-            mysql_query(conn, temp_query);
+                delete_from_table_POWER_TO_USER(sd, conn, u_id);
+            
+                insert_into_table_POWER_TO_USER(sd, conn, u_id, id);
+            }
+            else{
+                safe_m_err = SAFE_M_NOT_SYNC_WITH_REG;
+            }
         }
     }
-    mysql_free_result(result);
+
     mysql_close(conn);
     mysql_library_end();
 
-    return sql_err;
-
+    return safe_m_err;
 }

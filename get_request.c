@@ -1,5 +1,4 @@
 #include <errno.h>
-#include "tcp_function.h"
 #include "get_request.h"
 
 // 에러 처리 코드 추가 필요

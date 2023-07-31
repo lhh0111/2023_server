@@ -65,3 +65,15 @@ void create_table_LOGIN_TOKEN(int sd, MYSQL * conn);
 void delete_from_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id);
 
 void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer);
+
+bool check_valid_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer);
+
+void update_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id);
+
+void create_table_POWER_TO_USER(int sd, MYSQL * conn);
+
+void delete_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id);
+
+void insert_into_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id, const char * id);
+
+bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id);

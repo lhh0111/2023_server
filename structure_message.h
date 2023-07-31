@@ -72,4 +72,8 @@ struct MessageJRequest{
     char u_id[U_ID_LENGTH];
 };
 
+struct MessageJResponse{
+    char start;
+    char safe_m_err;
+};
 #pragma pack(pop)

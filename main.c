@@ -159,62 +159,6 @@ int check_message_type_from_stream(int sd){
 
 /* 인자로 소켓 디스크립터, 처리할 메시지 종류를 전해주면, 그 스트림으로부터 그 메시지를 읽고 적절한 처리를 한 뒤 응답메시지를 보냄. */
 void protocol_implementation(int sd, int message_type){
-   /*
-   if(message_type==MESSAGE_A){
- 
-      char unique_id_buffer[UNIQUE_ID_LENGTH + 1];
-      char unique_pw_buffer[UNIQUE_PW_LENGTH + 1];
-      char user_id_buffer[USER_ID_LENGTH + 1];
-
-      int index = 0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            unique_id_buffer[index] = temp;
-            index++;
-         }
-         else {
-            unique_id_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      index=0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            unique_pw_buffer[index] = temp;
-            index++;
-         }
-         else {
-            unique_pw_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      index=0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            user_id_buffer[index] = temp;
-            index++;
-         }
-         else {
-            user_id_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      // 디버깅 코드
-      printf("unique id: %s \n", unique_id_buffer);
-      printf("unique pw: %s \n", unique_pw_buffer);
-      printf("user id: %s \n", user_id_buffer);
-
-   }
-   */
    if (message_type == MESSAGE_A){
       struct MessageARequest req = {{0}};
       _get_req(sd, &req, sizeof(req));
@@ -238,103 +182,16 @@ void protocol_implementation(int sd, int message_type){
       struct MessageDRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
       char token_buffer[TOKEN_SIZE+1] = {0}; // string
-      char safe_m_err = _sql_d_req(&req, token_buffer, sizeof(token_buffer) - 1);
+      char safe_m_err = _sql_d_req(sd, &req, token_buffer, sizeof(token_buffer) - 1);
       _send_d_res(sd, safe_m_err, token_buffer);
    }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      char safe_m_err = _sql_j_req(&req);
+      char safe_m_err = _sql_j_req(sd, &req);
+      _send_j_res(sd, safe_m_err);
    }
-   /*
-   else if(message_type==MESSAGE_C){
-      char user_id_buffer[USER_ID_LENGTH + 1];
-      char user_pw_buffer[USER_PW_LENGTH + 1];
-      _get_user_id_pw(sd, user_id_buffer, user_pw_buffer);
-      int err = _insert_id_pw(user_id_buffer, user_pw_buffer);
-      if(err==SQL_SUCCESS){
-         write(sd, "21", 2);
-      }
-      else if(err==ERROR_DUPLICATED_ID){
-         write(sd, "20", 2);
-      }
-      return;
-   }
-   else if(message_type==MESSAGE_D){}
-   else if(message_type==MESSAGE_E){}
-   else if(message_type==MESSAGE_F){}
-   */
   return;
 }
 
 
-/* sd, id 버퍼 시작점, pw 버퍼 시작점을 주면 그 스트림으로부터 유저 id, pw를 읽어 null-terminated로 버퍼에 넣는 함수, 패킷 하나를 전부 읽을 때까지 블로킹됨 */
-/*
-void _get_user_id_pw(int sd, char *user_id_buffer, char *user_pw_buffer)
-{
-      int index=0;
-
-      for(;;){
-         char temp;
-         temp = _get_char_from_stream(sd);
-         if(temp!=' '){
-            user_id_buffer[index] = temp;
-            index++;
-         }
-         else if(index==8){
-            user_id_buffer[index] = '\0';
-            break;
-         }
-         else{
-            user_id_buffer[index] = '\0';
-            break;
-         }
-      }
-      index=0;
-      for(;;){
-         char temp;
-         temp = _get_char_from_stream(sd);
-         if(temp!=' '){
-            user_pw_buffer[index] = temp;
-            index++;
-         }
-         else if(index==8){
-            user_pw_buffer[index] = '\0';
-            break;
-         }
-         else{
-            user_pw_buffer[index] = '\0';
-            break;
-         }
-      }   
-      return;
-}
-*/
-
-/* id, pw가 들어간 버퍼(null-terminated)의 시작점을 받아서 id, pw를 user_info 데이터베이스의 id_pw 테이블에 추가하는 함수
-   만약 같은 id가 등록된 경우 ERROR_DUPLICATED_ID를 반환하고, 정상적으로 처리된 경우 SQL_SUCCESS를 반환함. */
-// SQL 연결이 도중이 잘못됐을 때를 처리하는 코드 추가 필요
-
-/*
-int _insert_id_pw(const char* id, const char* pw)
-{
-   mysql_library_init(0, NULL, NULL);
-   MYSQL *conn = mysql_init(NULL);
-   mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
-   char temp_query[100]={0};
-   sprintf(temp_query, "SELECT * FROM id_pw WHERE id = '%s'", id);
-   mysql_query(conn, temp_query);
-   MYSQL_RES * result = mysql_store_result(conn);
-   if(mysql_num_rows(result)!=0){
-      return ERROR_DUPLICATED_ID; // 중복된 ID
-   }
-   sprintf(temp_query, "INSERT INTO id_pw VALUES('%s','%s')", id, pw);
-   mysql_query(conn, temp_query);
-   mysql_store_result(conn);
-   mysql_close(conn);
-   mysql_library_end();
-
-   return SQL_SUCCESS;
-}
-
-*/

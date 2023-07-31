@@ -2,6 +2,7 @@
 #include "sql_constant.h"
 #include "structure_message.h"
 #include "unix_wrapper.h"
+#include "safe_m_constant.h"
 
 void _send_a_res(int sd)
 {
@@ -16,7 +17,8 @@ void _send_a_res(int sd)
 
 void _send_b_res(int sd, char relay_status)
 {
-    char res[3] = {MESSAGE_B_START, relay_status, '&'};
+    char res[3] = {MESSAGE_B_START, RELAY_NO_REQ, '&'};
+    res[1] = relay_status;
     char * temp = res;
     while(temp < res + sizeof(res)){
         Write(sd, temp, 1);
@@ -49,5 +51,22 @@ void _send_d_res(int sd, char safe_m_err, const char * token_buffer)
             temp++;
     }
     
+    return;
+}
+
+void _send_j_res(int sd, char safe_m_err)
+{
+    struct MessageJResponse res;
+    res.start = MESSAGE_J_START;
+    res.safe_m_err = safe_m_err;
+
+    char * point = &res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
     return;
 }
