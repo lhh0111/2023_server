@@ -1,78 +1,99 @@
 #include "send_response.h"
 #include "sql_constant.h"
 #include "structure_message.h"
+#include "unix_wrapper.h"
+#include "safe_m_constant.h"
 
-void _send_b_res(int sd, int sql, char relay_status)
+void _send_a_res(int sd)
 {
-    if(sql==SQL_SUCCESS){
-        char buffer[3] = {'1', relay_status, '&'};
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
-    }
-    else{
-        char buffer[3] = {'1', RELAY_FAIL, '&'};
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
+    char res[2] = {MESSAGE_A_START, '&'};
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
     }
     return;
 }
 
-void _send_c_res(int sd, int sql)
+void _send_b_res(int sd, char relay_status)
 {
-    if(sql==SQL_SUCCESS){
-        char buffer[2] = {'2', '0'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
-    }
-    else if(sql==SQL_ERROR){
-        char buffer[2] = {'2', '2'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
-    }
-    else if(sql==SQL_DUPLICATED_ID){
-        char buffer[2] = {'2', '1'}; 
-        char * temp = buffer;
-        while(temp < buffer + sizeof(buffer)){
-            write(sd, temp, 1);
-            temp++;
-        }
+    char res[3] = {MESSAGE_B_START, RELAY_NO_REQ, '&'};
+    res[1] = relay_status;
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
     }
     return;
 }
 
-void _send_d_res(int sd, int sql, char * token)
+void _send_c_res(int sd, char safe_m_err)
+{
+    char res[2] = {MESSAGE_C_START, safe_m_err};
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+    return;
+}
+
+void _send_d_res(int sd, char safe_m_err, const char * token_buffer)
 {
     char res[2+TOKEN_SIZE];
     res[0] = MESSAGE_D_START;
-    memcpy(&res[2], token, TOKEN_SIZE);
+    res[1] = safe_m_err;
+    memcpy(&res[2], token_buffer, TOKEN_SIZE);
 
-    if(sql==SQL_SUCCESS){
-        res[1] = '0';
-
-    }
-    else if(sql==SQL_INVALID_ID_PW){
-        res[1] = '1';
-    }
-    else if(sql==SQL_ERROR){
-        res[1] = '2';
-    }
     char * temp = res;
     while(temp < res + sizeof(res)){
-            write(sd, temp, 1);
+            Write(sd, temp, 1);
             temp++;
     }
     
+    return;
+}
+
+void _send_e_res(int sd, char safe_m_err, char (*power_list)[U_ID_LENGTH], uint32_t power_number)
+{
+    struct MessageEResponse res;
+    res.type = MESSAGE_E_START;
+    res.safe_m_err = safe_m_err;
+    res.power_number = power_number;
+
+    char * point = (char *)&res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
+    char (*temp_list)[U_ID_LENGTH] = power_list;
+
+    while(temp_list < power_list + power_number){
+        for(int i = 0; i < U_ID_LENGTH; i++){
+            Write(sd, *temp_list + i, 1);
+        }
+        temp_list++;
+    }
+    free(power_list);
+    return;
+}
+
+void _send_j_res(int sd, char safe_m_err)
+{
+    struct MessageJResponse res;
+    res.start = MESSAGE_J_START;
+    res.safe_m_err = safe_m_err;
+
+    char * point = (char *)&res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
     return;
 }

@@ -1,7 +1,7 @@
 #pragma once
 #pragma pack(push, 1)
 
-#define RESPONSE_SQL_ERROR "Z"
+#define RESPONSE_SQL_ERROR "Z&"
 
 #define U_ID_LENGTH 8
 #define U_ID_LENGTH_S "8"
@@ -11,6 +11,7 @@
 #define USER_PW_LENGTH_S "16"
 
 #define TOKEN_SIZE 8
+#define TOKEN_SIZE_S "8"
 
 #define MESSAGE_A 0
 #define MESSAGE_B 1
@@ -24,6 +25,7 @@
 #define MESSAGE_J 9
 
 #define MESSAGE_A_START '0'
+#define MESSAGE_A_LAST '&'
 #define MESSAGE_B_START '1'
 #define MESSAGE_C_START '2'
 #define MESSAGE_D_START '3'
@@ -64,10 +66,25 @@ struct MessageDRequest{
     char pw[USER_PW_LENGTH];
 };
 
+struct MessageERequest{
+    char id[USER_ID_LENGTH];
+    char token[TOKEN_SIZE];
+};
+
+struct MessageEResponse{
+    char type;
+    char safe_m_err;
+    uint32_t power_number;
+};
+
 struct MessageJRequest{
     char id[USER_ID_LENGTH];
     char token[TOKEN_SIZE];
     char u_id[U_ID_LENGTH];
 };
 
+struct MessageJResponse{
+    char start;
+    char safe_m_err;
+};
 #pragma pack(pop)

@@ -1,5 +1,4 @@
 #include <errno.h>
-#include "tcp_function.h"
 #include "get_request.h"
 
 // 에러 처리 코드 추가 필요
@@ -8,7 +7,6 @@ int _get_req(int sd, void * req, int size)
 {
     char * temp = (char *)req;
     while(temp < (char *)req + size){
-        puts("0");
         int err = read(sd, temp, 1);
         if(err<0){
             if(errno!=EINTR){
@@ -20,7 +18,6 @@ int _get_req(int sd, void * req, int size)
         }
         else{
             temp++;
-            printf("%ld", ((char *)req + size) - temp);
         }
     }
     return 0;

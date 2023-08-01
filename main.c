@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +14,7 @@
 #include "sql_constant.h"
 #include "send_response.h"
 #include "get_request.h"
+#include "unix_wrapper.h"
 
 
 #define BUF_SIZE 30
@@ -43,9 +46,8 @@ int main(int argc, char* argv[])
    struct sockaddr_in serv_adr, clnt_adr;
 
    pid_t pid;
-   struct sigaction act;
    socklen_t adr_sz;
-   int str_len, state;
+   int str_len;
    char buf[BUF_SIZE];
    if(argc != 2)
    {
@@ -53,10 +55,8 @@ int main(int argc, char* argv[])
       exit(1);
    }
 
-   act.sa_handler = read_childproc; // 좀비 프로세스 생성을 막기위한 코드 
-   sigemptyset(&act.sa_mask);
-   act.sa_flags = 0;
-   state = sigaction(SIGCHLD, &act, 0);
+   signal(SIGCHLD, read_childproc);
+
    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
    memset(&serv_adr, 0, sizeof(serv_adr));
    serv_adr.sin_family = AF_INET;
@@ -117,8 +117,9 @@ void read_childproc(int sig)
 {
    pid_t pid;
    int status;
-   pid = waitpid(-1, &status, WNOHANG);
-   printf("removed proc id : %d \n", pid);
+   while((pid = waitpid(-1, &status, WNOHANG))> 0){
+      printf("removed proc id : %d \n", pid);
+   }
 }
 
 void error_handling(char* message)
@@ -135,7 +136,7 @@ void error_handling(char* message)
 /* sd가 가리키는 스트림(소켓)에 프로토콜의 어떤 메시지가 왔는지를 리턴함. 메시지를 찾을 때까지 블로킹되는 함수.*/
 int check_message_type_from_stream(int sd){
       char temp;
-      read(sd, &temp, 1);
+      Read(sd, &temp, 1);
       if(temp==MESSAGE_A_START){
          return MESSAGE_A;
       }
@@ -154,191 +155,55 @@ int check_message_type_from_stream(int sd){
       else if(temp==MESSAGE_F_START){
          return MESSAGE_F;
       }
-      else ;
+      else return -1;
 }
 
 /* 인자로 소켓 디스크립터, 처리할 메시지 종류를 전해주면, 그 스트림으로부터 그 메시지를 읽고 적절한 처리를 한 뒤 응답메시지를 보냄. */
 void protocol_implementation(int sd, int message_type){
-   /*
-   if(message_type==MESSAGE_A){
- 
-      char unique_id_buffer[UNIQUE_ID_LENGTH + 1];
-      char unique_pw_buffer[UNIQUE_PW_LENGTH + 1];
-      char user_id_buffer[USER_ID_LENGTH + 1];
-
-      int index = 0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            unique_id_buffer[index] = temp;
-            index++;
-         }
-         else {
-            unique_id_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      index=0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            unique_pw_buffer[index] = temp;
-            index++;
-         }
-         else {
-            unique_pw_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      index=0;
-      for(;;){
-         char temp;
-         temp = get_char_from_stream(sd);
-         if(temp!=' '){
-            user_id_buffer[index] = temp;
-            index++;
-         }
-         else {
-            user_id_buffer[index] = '\0';
-            break;
-         }
-      }
-
-      // 디버깅 코드
-      printf("unique id: %s \n", unique_id_buffer);
-      printf("unique pw: %s \n", unique_pw_buffer);
-      printf("user id: %s \n", user_id_buffer);
-
-   }
-   */
    if (message_type == MESSAGE_A){
       struct MessageARequest req = {{0}};
       _get_req(sd, &req, sizeof(req));
-      int sqlerr = _sql_a_req(&req);
+      _sql_a_req(sd, &req);
+      _send_a_res(sd);
    }
    else if(message_type==MESSAGE_B){
       struct MessageBRequest req={{0}};
-      char relay_status=RELAY_FAIL;
       _get_req(sd, &req, sizeof(req));
-      req.U_ID[sizeof(req.U_ID)-1] = '\0';
-      int sqlerr = _sql_b_req(&req, &relay_status);
-      _send_b_res(sd, sqlerr, relay_status);
+
+      char relay_req;
+      _sql_b_req(sd, &req, &relay_req);
+      _send_b_res(sd, relay_req);
    }
    else if(message_type==MESSAGE_C){
       struct MessageCRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      req.id[sizeof(req.id)-1] = '\0';
-      req.pw[sizeof(req.pw)-1] = '\0';
-      puts(req.id);
-      puts(req.pw);
-      int sqlerr = _sql_c_req(&req);
-      _send_c_res(sd, sqlerr);
+      char safe_m_err = _sql_c_req(sd, &req);
+      _send_c_res(sd, safe_m_err);
    }
    else if(message_type==MESSAGE_D){
       struct MessageDRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      char token[TOKEN_SIZE+1] = {0};
-      int sqlerr = _sql_d_req(&req, token, sizeof(token) - 1);
-      _send_d_res(sd, sqlerr, token);
+      char token_buffer[TOKEN_SIZE+1] = {0}; // string
+      char safe_m_err = _sql_d_req(sd, &req, token_buffer, sizeof(token_buffer));
+      _send_d_res(sd, safe_m_err, token_buffer);
+   }
+   else if(message_type==MESSAGE_E){
+      struct MessageERequest req;
+      _get_req(sd, &req, sizeof(req));
+      printf("herehere");
+      char (*power_list)[8] = NULL;
+      uint32_t power_number = 0;
+      char safe_m_err = _sql_e_req(sd, &req, &power_list, &power_number);
+      _send_e_res(sd, safe_m_err, power_list, power_number);
    }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
-      int sqlerr = _sql_j_req(&req);
+      char safe_m_err = _sql_j_req(sd, &req);
+      _send_j_res(sd, safe_m_err);
    }
-   /*
-   else if(message_type==MESSAGE_C){
-      char user_id_buffer[USER_ID_LENGTH + 1];
-      char user_pw_buffer[USER_PW_LENGTH + 1];
-      _get_user_id_pw(sd, user_id_buffer, user_pw_buffer);
-      int err = _insert_id_pw(user_id_buffer, user_pw_buffer);
-      if(err==SQL_SUCCESS){
-         write(sd, "21", 2);
-      }
-      else if(err==ERROR_DUPLICATED_ID){
-         write(sd, "20", 2);
-      }
-      return;
-   }
-   else if(message_type==MESSAGE_D){}
-   else if(message_type==MESSAGE_E){}
-   else if(message_type==MESSAGE_F){}
-   */
+   
   return;
 }
 
 
-/* sd, id 버퍼 시작점, pw 버퍼 시작점을 주면 그 스트림으로부터 유저 id, pw를 읽어 null-terminated로 버퍼에 넣는 함수, 패킷 하나를 전부 읽을 때까지 블로킹됨 */
-/*
-void _get_user_id_pw(int sd, char *user_id_buffer, char *user_pw_buffer)
-{
-      int index=0;
-
-      for(;;){
-         char temp;
-         temp = _get_char_from_stream(sd);
-         if(temp!=' '){
-            user_id_buffer[index] = temp;
-            index++;
-         }
-         else if(index==8){
-            user_id_buffer[index] = '\0';
-            break;
-         }
-         else{
-            user_id_buffer[index] = '\0';
-            break;
-         }
-      }
-      index=0;
-      for(;;){
-         char temp;
-         temp = _get_char_from_stream(sd);
-         if(temp!=' '){
-            user_pw_buffer[index] = temp;
-            index++;
-         }
-         else if(index==8){
-            user_pw_buffer[index] = '\0';
-            break;
-         }
-         else{
-            user_pw_buffer[index] = '\0';
-            break;
-         }
-      }   
-      return;
-}
-*/
-
-/* id, pw가 들어간 버퍼(null-terminated)의 시작점을 받아서 id, pw를 user_info 데이터베이스의 id_pw 테이블에 추가하는 함수
-   만약 같은 id가 등록된 경우 ERROR_DUPLICATED_ID를 반환하고, 정상적으로 처리된 경우 SQL_SUCCESS를 반환함. */
-// SQL 연결이 도중이 잘못됐을 때를 처리하는 코드 추가 필요
-
-/*
-int _insert_id_pw(const char* id, const char* pw)
-{
-   mysql_library_init(0, NULL, NULL);
-   MYSQL *conn = mysql_init(NULL);
-   mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
-   char temp_query[100]={0};
-   sprintf(temp_query, "SELECT * FROM id_pw WHERE id = '%s'", id);
-   mysql_query(conn, temp_query);
-   MYSQL_RES * result = mysql_store_result(conn);
-   if(mysql_num_rows(result)!=0){
-      return ERROR_DUPLICATED_ID; // 중복된 ID
-   }
-   sprintf(temp_query, "INSERT INTO id_pw VALUES('%s','%s')", id, pw);
-   mysql_query(conn, temp_query);
-   mysql_store_result(conn);
-   mysql_close(conn);
-   mysql_library_end();
-
-   return SQL_SUCCESS;
-}
-
-*/
