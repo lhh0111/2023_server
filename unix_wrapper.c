@@ -18,12 +18,12 @@ int Read(int fd, void * buf, size_t nbytes)
             return n;
         }
         else if(n==0){
-            fprintf("remote socket was closed\n", stderr);
+            fprintf(stderr, "remote socket was closed\n");
             exit(3);
         }
         else{
             if(errno != EINTR){
-                fprintf("read failed with error code: %u\n", stderr, errno);
+                fprintf(stderr, "read failed with error code: %u\n", errno);
                 exit(2);
             }
         }
@@ -40,12 +40,12 @@ int Write(int fd, void * buf, size_t nbytes)
             return n;
         }
         else if(n==0){
-            fprintf("remote socket was closed\n", stderr);
+            fprintf(stderr, "remote socket was closed\n");
             exit(3);
         }
         else{
             if(errno != EINTR){
-                fprintf("write failed with error code: %u\n", stderr, errno);
+                fprintf(stderr ,"write failed with error code: %u\n", errno);
                 exit(2);
             }
         }

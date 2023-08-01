@@ -66,6 +66,17 @@ struct MessageDRequest{
     char pw[USER_PW_LENGTH];
 };
 
+struct MessageERequest{
+    char id[USER_ID_LENGTH];
+    char token[TOKEN_SIZE];
+};
+
+struct MessageEResponse{
+    char type;
+    char safe_m_err;
+    uint32_t power_number;
+};
+
 struct MessageJRequest{
     char id[USER_ID_LENGTH];
     char token[TOKEN_SIZE];

@@ -57,7 +57,7 @@ void _sql_b_req(int sd, struct MessageBRequest * req, char * relay_req)
 
     MYSQL_RES * result;
 
-    select_from_table_RELAY_REQ(sd, conn, u_id, result);
+    select_from_table_RELAY_REQ(sd, conn, u_id, &result);
     MYSQL_ROW row;
     if(mysql_num_rows(result)>0){ // 로컬 api들은 errno을 초기화하지 않음.
         row = mysql_fetch_row(result);
@@ -162,6 +162,46 @@ char _sql_d_req(int sd, struct MessageDRequest *req, char * token_buffer, int to
     mysql_library_end();
 
     return safe_m_err;
+}
+
+char _sql_e_req(int sd, struct MessageERequest * req, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
+{
+    char id[USER_ID_LENGTH + 1];
+    memcpy(id, req->id, USER_ID_LENGTH);
+    id[sizeof(id) - 1] = '\0';
+
+    char token[TOKEN_SIZE + 1];
+    memcpy(token, req->token, TOKEN_SIZE);
+    token[sizeof(token) - 1] = '\0';
+
+    mysql_library_init(0, NULL, NULL);
+    MYSQL *conn = mysql_init(NULL);
+    mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
+
+
+    char safe_m_err = SAFE_M_SUCCESS;
+
+    create_table_ID_PW(sd, conn);
+    if(check_duplicated_id_from_table_ID_PW(sd, conn, id)){
+        create_table_LOGIN_TOKEN(sd, conn);
+        if(check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token)){
+            create_table_POWER_TO_USER(sd, conn);
+            printf("here");
+            select_from_table_POWER_TO_USER(sd, conn, id, power_list, power_number);
+        }
+        else{
+            safe_m_err = SAFE_M_INVALID_TOKEN;
+        }
+    }
+    else{
+        safe_m_err = SAFE_M_ID_NOT_EXISTS;
+    }
+
+    mysql_close(conn);
+    mysql_library_end();
+
+    return safe_m_err;
+
 }
 
 char _sql_j_req(int sd, struct MessageJRequest * req)

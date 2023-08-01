@@ -2,19 +2,27 @@
 #include "structure_message.h"
 #include "unix_wrapper.h"
 
+void send_exit_with_sql_error(int sd)
+{
+    char res[] = RESPONSE_SQL_ERROR;
+    char * temp = res;
+    while(temp < res + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+    char test;
+    while(true){
+        Read(sd, &test, 1);
+    }
+}
+
 void error_occured(int sd, MYSQL * conn)
 {
     if(mysql_errno(conn)!=0){ // mysql_store_result()의 반환값이 NULL일 때, 정말 MYSQL 측의 에러인지, 아니면 이전 SQL문에 의한 정상적인 반환인지 판단하기 위한 조건문.
         fprintf(stderr, "%s, %d, %s\n", mysql_error(conn), mysql_errno(conn), mysql_sqlstate(conn));
-        char res[] = RESPONSE_SQL_ERROR;
-        char * temp = res;
-        while(temp < res + sizeof(res)){
-            Write(sd, temp, 1);
-            temp++;
-        }
         mysql_close(conn);
         mysql_library_end();
-        exit(1);
+        send_exit_with_sql_error(sd);
     }
 }
 
@@ -192,7 +200,7 @@ void create_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id)
     error_occured(sd, conn);
 }
 
-void select_from_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, MYSQL_RES * result)
+void select_from_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, MYSQL_RES ** result)
 {
     char temp_query[300];
 
@@ -203,7 +211,7 @@ void select_from_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, MYSQL_
 
     error_occured(sd, conn);
 
-    result = mysql_store_result(conn); // 에러가 일어났다면 result에는 NULL이 저장됨.
+    *result = mysql_store_result(conn); // 에러가 일어났다면 result에는 NULL이 저장됨.
     error_occured(sd, conn);
 }
 
@@ -400,4 +408,33 @@ bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id)
         mysql_free_result(result);
         return true;
     }
+}
+
+void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "POWER_TO_USER_COL_0_NAME" FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_1_NAME" = '%s'", id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    MYSQL_RES * result = Mysql_store_result(sd, conn);
+    *power_number = mysql_num_rows(result);
+    putc(*power_number, stdout);
+    *power_list = (char (*)[U_ID_LENGTH])malloc(*power_number * U_ID_LENGTH);
+    char (*temp)[U_ID_LENGTH] = *power_list;
+
+    while(temp<*power_list + *power_number){
+        MYSQL_ROW row = mysql_fetch_row(result);
+        if(strlen(row[0])!=U_ID_LENGTH){
+            fprintf(stderr, "found error in POWER_TO_USER: u_id length");
+            send_exit_with_sql_error(sd);
+        }
+        else{
+            memcpy(temp++, row[0], U_ID_LENGTH);
+        }
+    }
+    mysql_free_result(result);
+    return ;
 }

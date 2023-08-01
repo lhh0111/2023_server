@@ -14,6 +14,7 @@
 #include "sql_constant.h"
 #include "send_response.h"
 #include "get_request.h"
+#include "unix_wrapper.h"
 
 
 #define BUF_SIZE 30
@@ -135,7 +136,7 @@ void error_handling(char* message)
 /* sd가 가리키는 스트림(소켓)에 프로토콜의 어떤 메시지가 왔는지를 리턴함. 메시지를 찾을 때까지 블로킹되는 함수.*/
 int check_message_type_from_stream(int sd){
       char temp;
-      read(sd, &temp, 1);
+      Read(sd, &temp, 1);
       if(temp==MESSAGE_A_START){
          return MESSAGE_A;
       }
@@ -154,7 +155,7 @@ int check_message_type_from_stream(int sd){
       else if(temp==MESSAGE_F_START){
          return MESSAGE_F;
       }
-      else ;
+      else return -1;
 }
 
 /* 인자로 소켓 디스크립터, 처리할 메시지 종류를 전해주면, 그 스트림으로부터 그 메시지를 읽고 적절한 처리를 한 뒤 응답메시지를 보냄. */
@@ -162,7 +163,8 @@ void protocol_implementation(int sd, int message_type){
    if (message_type == MESSAGE_A){
       struct MessageARequest req = {{0}};
       _get_req(sd, &req, sizeof(req));
-      int sqlerr = _sql_a_req(&req);
+      _sql_a_req(sd, &req);
+      _send_a_res(sd);
    }
    else if(message_type==MESSAGE_B){
       struct MessageBRequest req={{0}};
@@ -182,8 +184,17 @@ void protocol_implementation(int sd, int message_type){
       struct MessageDRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
       char token_buffer[TOKEN_SIZE+1] = {0}; // string
-      char safe_m_err = _sql_d_req(sd, &req, token_buffer, sizeof(token_buffer) - 1);
+      char safe_m_err = _sql_d_req(sd, &req, token_buffer, sizeof(token_buffer));
       _send_d_res(sd, safe_m_err, token_buffer);
+   }
+   else if(message_type==MESSAGE_E){
+      struct MessageERequest req;
+      _get_req(sd, &req, sizeof(req));
+      printf("herehere");
+      char (*power_list)[8] = NULL;
+      uint32_t power_number = 0;
+      char safe_m_err = _sql_e_req(sd, &req, &power_list, &power_number);
+      _send_e_res(sd, safe_m_err, power_list, power_number);
    }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};
@@ -191,6 +202,7 @@ void protocol_implementation(int sd, int message_type){
       char safe_m_err = _sql_j_req(sd, &req);
       _send_j_res(sd, safe_m_err);
    }
+   
   return;
 }
 

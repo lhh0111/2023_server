@@ -54,13 +54,40 @@ void _send_d_res(int sd, char safe_m_err, const char * token_buffer)
     return;
 }
 
+void _send_e_res(int sd, char safe_m_err, char (*power_list)[U_ID_LENGTH], uint32_t power_number)
+{
+    struct MessageEResponse res;
+    res.type = MESSAGE_E_START;
+    res.safe_m_err = safe_m_err;
+    res.power_number = power_number;
+
+    char * point = (char *)&res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
+    char (*temp_list)[U_ID_LENGTH] = power_list;
+
+    while(temp_list < power_list + power_number){
+        for(int i = 0; i < U_ID_LENGTH; i++){
+            Write(sd, *temp_list + i, 1);
+        }
+        temp_list++;
+    }
+    free(power_list);
+    return;
+}
+
 void _send_j_res(int sd, char safe_m_err)
 {
     struct MessageJResponse res;
     res.start = MESSAGE_J_START;
     res.safe_m_err = safe_m_err;
 
-    char * point = &res;
+    char * point = (char *)&res;
     char * temp = point;
 
     while(temp < point + sizeof(res)){

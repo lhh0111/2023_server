@@ -19,7 +19,7 @@
 #define ENERGY_COL_1_TYPE "DOUBLE NOT NULL"
 #define ENERGY_COL_2_NAME "hole_0"
 #define ENERGY_COL_2_TYPE "DOUBLE NOT NULL"
-#define ENERGY_COL_3_NAME "interval"
+#define ENERGY_COL_3_NAME "time_interval"
 #define ENERGY_COL_3_TYPE "DOUBLE NOT NULL"
 #define ENERGY_COL_4_NAME "time"
 #define ENERGY_COL_4_TYPE "TIMESTAMP NOT NULL"
