@@ -155,6 +155,9 @@ int check_message_type_from_stream(int sd){
       else if(temp==MESSAGE_F_START){
          return MESSAGE_F;
       }
+      else if(temp==MESSAGE_J_START){
+         return MESSAGE_J;
+      }
       else return -1;
 }
 
