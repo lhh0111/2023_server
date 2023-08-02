@@ -35,39 +35,41 @@ void _sql_b_req(int sd, struct MessageBRequest * req, char * relay_req)
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    // ENERGY
-    create_table_ENERGY(sd, conn, u_id);
-    insert_into_table_ENERGY(sd, conn, u_id, req->hole_2_energy, req->hole_1_energy, req->hole_0_energy, req->energy_interval);
+    create_table_POWER_LIST(sd, conn);
+    if(check_valid_u_id(sd, conn, u_id)){
+        // ENERGY
+        create_table_ENERGY(sd, conn, u_id);
+        insert_into_table_ENERGY(sd, conn, u_id, req->hole_2_energy, req->hole_1_energy, req->hole_0_energy, req->energy_interval);
 
-    // TEMPERATURE
-    create_table_TEM(sd, conn, u_id);
-    insert_into_table_TEM(sd, conn, u_id, req->tem);
+        // TEMPERATURE
+        create_table_TEM(sd, conn, u_id);
+        insert_into_table_TEM(sd, conn, u_id, req->tem);
 
-    // HUM
-    create_table_HUM(sd, conn, u_id);
-    insert_into_table_HUM(sd, conn, u_id, req->hum);
+        // HUM
+        create_table_HUM(sd, conn, u_id);
+        insert_into_table_HUM(sd, conn, u_id, req->hum);
 
-   // DUST
-    create_table_DUST(sd, conn, u_id);
-    insert_into_table_DUST(sd, conn, u_id, req->dust);
+    // DUST
+        create_table_DUST(sd, conn, u_id);
+        insert_into_table_DUST(sd, conn, u_id, req->dust);
 
-   
-    // get relay_request information
-    create_table_RELAY_REQ(sd, conn, u_id);
+    
+        // get relay_request information
+        create_table_RELAY_REQ(sd, conn, u_id);
 
-    MYSQL_RES * result;
+        MYSQL_RES * result;
 
-    select_from_table_RELAY_REQ(sd, conn, u_id, &result);
-    MYSQL_ROW row;
-    if(mysql_num_rows(result)>0){ // 로컬 api들은 errno을 초기화하지 않음.
-        row = mysql_fetch_row(result);
-        *relay_req=*(row[0]);
+        select_from_table_RELAY_REQ(sd, conn, u_id, &result);
+        MYSQL_ROW row;
+        if(mysql_num_rows(result)>0){ // 로컬 api들은 errno을 초기화하지 않음.
+            row = mysql_fetch_row(result);
+            *relay_req=*(row[0]);
+        }
+        else{
+            *relay_req=RELAY_NO_REQ;
+        }
+        mysql_free_result(result);
     }
-    else{
-        *relay_req=RELAY_NO_REQ;
-    }
-    mysql_free_result(result);
-
 
     mysql_close(conn);
     mysql_library_end();
@@ -242,17 +244,23 @@ char _sql_j_req(int sd, struct MessageJRequest * req)
         else{
             update_token_from_LOGIN_TOKEN(sd, conn, id);
 
-            create_table_REG(sd, conn);
-            
-            if(check_sync_with_REG(sd, conn, u_id)){
-                create_table_POWER_TO_USER(sd, conn);
+            create_table_POWER_LIST(sd, conn);
+            if(check_valid_u_id(sd, conn, u_id)){
+                create_table_REG(sd, conn);
+                
+                if(check_sync_with_REG(sd, conn, u_id)){
+                    create_table_POWER_TO_USER(sd, conn);
 
-                delete_from_table_POWER_TO_USER(sd, conn, u_id);
-            
-                insert_into_table_POWER_TO_USER(sd, conn, u_id, id);
+                    delete_from_table_POWER_TO_USER(sd, conn, u_id);
+                
+                    insert_into_table_POWER_TO_USER(sd, conn, u_id, id);
+                }
+                else{
+                    safe_m_err = SAFE_M_NOT_SYNC_WITH_REG;
+                }
             }
             else{
-                safe_m_err = SAFE_M_NOT_SYNC_WITH_REG;
+                safe_m_err = SAFE_M_U_ID_NOT_EXISTS;
             }
         }
     }
