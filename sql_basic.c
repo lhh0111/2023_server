@@ -438,3 +438,35 @@ void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char
     mysql_free_result(result);
     return ;
 }
+
+void create_table_POWER_LIST(int sd, MYSQL * conn)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS power_info.POWER_LIST("POWER_LIST_COL_0_NAME" "POWER_LIST_COL_0_TYPE")");
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    return;
+}
+
+bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM power_info.POWER_LIST WHERE "POWER_LIST_COL_0_NAME" ='%s'", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    if(mysql_num_rows(result)==0){
+        mysql_free_result(result);
+        return false;
+    }
+    else{
+        mysql_free_result(result);
+        return true;
+    }
+}

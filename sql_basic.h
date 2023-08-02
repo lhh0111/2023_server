@@ -79,3 +79,7 @@ void insert_into_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id, co
 bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id);
 
 void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char (**power_list)[8], uint32_t * power_number);
+
+void create_table_POWER_LIST(int sd, MYSQL * conn);
+
+bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id);
