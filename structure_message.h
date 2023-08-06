@@ -1,6 +1,8 @@
 #pragma once
 #pragma pack(push, 1)
 
+#include <stdint.h>
+
 #define RESPONSE_SQL_ERROR "Z&"
 
 #define U_ID_LENGTH 8
