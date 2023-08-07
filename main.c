@@ -91,7 +91,6 @@ int main(int argc, char* argv[])
          close(serv_sock);  // 자식 영역에서는 서버 소켓을 닫음(필요없는 소켓을 열어둘필요가 없기때문)
 
          // new code section
-         puts("here0");
          int message_type = check_message_type_from_stream(clnt_sock);
          protocol_implementation(clnt_sock, message_type);
          // new code section
@@ -193,11 +192,23 @@ void protocol_implementation(int sd, int message_type){
    else if(message_type==MESSAGE_E){
       struct MessageERequest req;
       _get_req(sd, &req, sizeof(req));
-      printf("herehere");
       char (*power_list)[8] = NULL;
       uint32_t power_number = 0;
       char safe_m_err = _sql_e_req(sd, &req, &power_list, &power_number);
       _send_e_res(sd, safe_m_err, power_list, power_number);
+   }
+   else if(message_type==MESSAGE_F){
+      struct MessageFRequest req;
+      _get_req(sd, &req, sizeof(req));
+      char safe_m_err = _sql_f_req(sd, &req);
+      _send_f_res(sd, safe_m_err);
+   }
+   else if(message_type==MESSAGE_G){
+      struct MessageGRequest req;
+      _get_req(sd, &req, sizeof(req));
+      struct MessageGResponse res;
+      char safe_m_err = _sql_g_req(sd, &req, &res);
+      _send_g_res(sd, safe_m_err, res);
    }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};

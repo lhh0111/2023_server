@@ -209,15 +209,15 @@ char _sql_e_req(int sd, struct MessageERequest * req, char (**power_list)[U_ID_L
 char _sql_j_req(int sd, struct MessageJRequest * req)
 {
     char id[USER_ID_LENGTH + 1];
-    memcpy(id, req->id, USER_ID_LENGTH);
+    memcpy(id, req->id, sizeof(id) - 1);
     id[sizeof(id) - 1] = '\0';
 
     char token[TOKEN_SIZE + 1];
-    memcpy(token, req->token, TOKEN_SIZE);
+    memcpy(token, req->token, sizeof(token) - 1);
     token[sizeof(token) - 1] = '\0';
 
     char u_id[U_ID_LENGTH + 1];
-    memcpy(u_id, req->u_id, U_ID_LENGTH);
+    memcpy(u_id, req->u_id, sizeof(u_id) - 1);
     u_id[sizeof(u_id) - 1] = '\0';
 
     
@@ -270,3 +270,117 @@ char _sql_j_req(int sd, struct MessageJRequest * req)
 
     return safe_m_err;
 }
+
+char _sql_f_req(int sd, struct MessageFRequest * req)
+{
+    char id[USER_ID_LENGTH + 1];
+    memcpy(id, req->id, sizeof(id) - 1);
+    id[sizeof(id) - 1] = '\0';
+
+    char token_buffer[TOKEN_SIZE + 1];
+    memcpy(token_buffer, req->token, sizeof(token_buffer) - 1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
+
+    char u_id[U_ID_LENGTH + 1];
+    memcpy(u_id, req->u_id, sizeof(u_id) - 1);
+    u_id[sizeof(u_id) - 1] = '\0';
+
+
+    char relay_req = req->relay_req;
+
+    mysql_library_init(0, NULL, NULL);
+    MYSQL *conn = mysql_init(NULL);
+    mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
+
+    // + id 확인
+    create_table_ID_PW(sd, conn);
+    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_ID_NOT_EXISTS;
+    }
+
+    // + token 확인
+    create_table_LOGIN_TOKEN(sd, conn);
+    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_INVALID_TOKEN;
+    }
+
+    // + u_id 확인
+
+    create_table_POWER_LIST(sd, conn);
+    if(!check_valid_u_id(sd, conn, u_id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    // + RELAY_REQ 테이블 생성
+    create_table_RELAY_REQ(sd, conn, u_id);
+    // + RELAY_REQ에 예약 후 리턴
+    insert_into_table_RELAY_REQ(sd, conn, u_id, relay_req);
+
+    mysql_close(conn);
+    mysql_library_end();
+    return SAFE_M_SUCCESS;
+}
+
+char _sql_g_req(int sd, struct MessageGRequest * req, struct MessageGResponse * res)
+{
+
+    char id[USER_ID_LENGTH + 1];
+    memcpy(id, req->id, sizeof(id) - 1);
+    id[sizeof(id) - 1] = '\0';
+
+    char token_buffer[TOKEN_SIZE + 1];
+    memcpy(token_buffer, req->token, sizeof(token_buffer) - 1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
+
+    char u_id[U_ID_LENGTH + 1];
+    memcpy(u_id, req->u_id, sizeof(u_id) - 1);
+    u_id[sizeof(u_id) - 1] = '\0';
+
+    mysql_library_init(0, NULL, NULL);
+    MYSQL *conn = mysql_init(NULL);
+    mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
+
+    // + id 확인
+    create_table_ID_PW(sd, conn);
+    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_ID_NOT_EXISTS;
+    }
+
+    // + token 확인
+    create_table_LOGIN_TOKEN(sd, conn);
+    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_INVALID_TOKEN;
+    }
+
+    // + u_id 확인
+
+    create_table_POWER_LIST(sd, conn);
+    if(!check_valid_u_id(sd, conn, u_id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    // + ENERGY 테이블 생성
+    create_table_ENERGY(sd, conn, u_id);
+    
+    // + ENERGY 테이블에서 날짜로 행 가져와서 특정 기간동안의 평균 전력 구하기
+    get_average_power_month(sd, conn, u_id, res);
+    get_average_power_week(sd, conn, u_id, res);
+    get_average_power_day(sd, conn, u_id, res);
+    get_average_power_now(sd, conn, u_id, res);
+
+    mysql_close(conn);
+    mysql_library_end();
+    return SAFE_M_SUCCESS;
+}   

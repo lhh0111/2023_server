@@ -470,3 +470,123 @@ bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id)
         return true;
     }
 }
+
+void insert_into_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, const char relay_req)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO power_info.%s_RELAY_REQ VALUES('%c')", u_id, relay_req);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+
+    return;
+}
+
+void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
+    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
+    MYSQL_ROW row = NULL;
+    while((row = mysql_fetch_row(result))   !=  NULL){
+        char * temp;
+        hole_2 += strtod(row[0], &temp);
+        hole_1 += strtod(row[1], &temp);
+        hole_0 += strtod(row[2], &temp);
+    }
+    mysql_free_result(result);
+
+    res->hole_2_month = hole_2/MONTH_TO_SEC; // 평균전력 얻기
+    res->hole_1_month = hole_1/MONTH_TO_SEC;
+    res->hole_0_month = hole_0/MONTH_TO_SEC;
+    return;
+}
+
+void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
+    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
+    MYSQL_ROW row = NULL;
+    while((row = mysql_fetch_row(result))   !=  NULL){
+        char * temp;
+        hole_2 += strtod(row[0], &temp);
+        hole_1 += strtod(row[1], &temp);
+        hole_0 += strtod(row[2], &temp);
+    }
+    mysql_free_result(result);
+
+    res->hole_2_week = hole_2/WEEK_TO_SEC; // 평균전력 얻기
+    res->hole_1_week = hole_1/WEEK_TO_SEC;
+    res->hole_0_week = hole_0/WEEK_TO_SEC;
+    return;
+}
+
+void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
+    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
+    MYSQL_ROW row = NULL;
+    while((row = mysql_fetch_row(result))   !=  NULL){
+        char * temp;
+        hole_2 += strtod(row[0], &temp);
+        hole_1 += strtod(row[1], &temp);
+        hole_0 += strtod(row[2], &temp);
+    }
+    mysql_free_result(result);
+
+    res->hole_2_day = hole_2/DAY_TO_SEC; // 평균전력 얻기
+    res->hole_1_day = hole_1/DAY_TO_SEC;
+    res->hole_0_day = hole_0/DAY_TO_SEC;
+    return;
+}
+
+void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
+    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
+    MYSQL_ROW row = NULL;
+    while((row = mysql_fetch_row(result))   !=  NULL){
+        char * temp;
+        hole_2 += strtod(row[0], &temp);
+        hole_1 += strtod(row[1], &temp);
+        hole_0 += strtod(row[2], &temp);
+    }
+    mysql_free_result(result);
+
+    res->hole_2_now = hole_2/MINUTE_TO_SEC; // 평균전력 얻기
+    res->hole_1_now = hole_1/MINUTE_TO_SEC;
+    res->hole_0_now = hole_0/MINUTE_TO_SEC;
+    return;
+}

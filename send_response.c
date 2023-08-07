@@ -81,6 +81,39 @@ void _send_e_res(int sd, char safe_m_err, char (*power_list)[U_ID_LENGTH], uint3
     return;
 }
 
+void _send_f_res(int sd, char safe_m_err)
+{
+    struct MessageFResponse res;
+    res.type = MESSAGE_F_START;
+    res.safe_m_err = safe_m_err;
+
+    const char * point = (char *)&res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
+    return;
+}
+
+void _send_g_res(int sd, char safe_m_err, struct MessageGResponse res)
+{
+    res.type = MESSAGE_G_START;
+    res.safe_m_err = safe_m_err;
+
+    const char * point = (char *)&res;
+    char * temp = point;
+
+    while(temp < point + sizeof(res)){
+        Write(sd, temp, 1);
+        temp++;
+    }
+
+    return;
+}
+
 void _send_j_res(int sd, char safe_m_err)
 {
     struct MessageJResponse res;

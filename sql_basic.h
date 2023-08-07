@@ -14,6 +14,11 @@
 #include "sql_basic.h"
 #include "structure_message.h"
 
+#define MONTH_TO_SEC 2629800.0
+#define WEEK_TO_SEC 604800.0
+#define DAY_TO_SEC 86400.0
+#define MINUTE_TO_SEC 60.0
+
 void error_occured(int sd, MYSQL * conn);
 
 
@@ -83,3 +88,13 @@ void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char
 void create_table_POWER_LIST(int sd, MYSQL * conn);
 
 bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id);
+
+void insert_into_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, const char relay_req);
+
+void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);

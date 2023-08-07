@@ -79,6 +79,41 @@ struct MessageEResponse{
     uint32_t power_number;
 };
 
+struct MessageFRequest{
+    char id[USER_ID_LENGTH];
+    char token[TOKEN_SIZE];
+    char u_id[U_ID_LENGTH];
+    char relay_req;
+};
+
+struct MessageFResponse{
+    char type;
+    char safe_m_err;
+};
+
+struct MessageGRequest{
+    char id[USER_ID_LENGTH];
+    char token[TOKEN_SIZE];
+    char u_id[U_ID_LENGTH];
+};
+
+struct MessageGResponse{
+    char type;
+    char safe_m_err;
+    double hole_2_month;
+    double hole_1_month;
+    double hole_0_month;
+    double hole_2_week;
+    double hole_1_week;
+    double hole_0_week;
+    double hole_2_day;
+    double hole_1_day;
+    double hole_0_day;
+    double hole_2_now;
+    double hole_1_now;
+    double hole_0_now;
+};
+
 struct MessageJRequest{
     char id[USER_ID_LENGTH];
     char token[TOKEN_SIZE];
