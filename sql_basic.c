@@ -590,3 +590,280 @@ void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct Messa
     res->hole_0_now = hole_0/MINUTE_TO_SEC;
     return;
 }
+
+void get_average_tem_month(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "TEM_COL_0_NAME" FROM power_info.%s_TEM WHERE "
+    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double month = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            month += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->tem_month = month/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->tem_month = 0.0;
+
+        return;
+    }
+    
+}
+
+void get_average_tem_week(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "TEM_COL_0_NAME" FROM power_info.%s_TEM WHERE "
+    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double week = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            week += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->tem_week = week/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->tem_week = 0.0;
+
+        return;
+    }
+    
+}
+void get_average_tem_day(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "TEM_COL_0_NAME" FROM power_info.%s_TEM WHERE "
+    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double day = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            day += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->tem_day = day/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->tem_day = 0.0;
+
+        return;
+    }
+    
+}
+void get_average_tem_now(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "TEM_COL_0_NAME" FROM power_info.%s_TEM WHERE "
+    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double now = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            now += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->tem_now = now/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->tem_now = 0.0;
+
+        return;
+    }
+    
+}
+
+void get_average_hum_month(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "HUM_COL_0_NAME" FROM power_info.%s_HUM WHERE "
+    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double month = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            month += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->hum_month = month/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->hum_month = 0.0;
+
+        return;
+    }
+    
+}
+
+void get_average_hum_week(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "HUM_COL_0_NAME" FROM power_info.%s_HUM WHERE "
+    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double week = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            week += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->hum_week = week/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->hum_week = 0.0;
+
+        return;
+    }
+    
+}
+void get_average_hum_day(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "HUM_COL_0_NAME" FROM power_info.%s_HUM WHERE "
+    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double day = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            day += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->hum_day = day/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->hum_day = 0.0;
+
+        return;
+    }
+    
+}
+void get_average_hum_now(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "HUM_COL_0_NAME" FROM power_info.%s_HUM WHERE "
+    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    Mysql_query(sd, conn, temp_query);
+    
+    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double now = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            now += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->hum_now = now/(double)num_rows; // 평균 얻기
+
+        return;
+    }
+    else{
+        mysql_free_result(result);
+        res->hum_now = 0.0;
+
+        return;
+    }
+    
+}
+

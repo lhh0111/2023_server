@@ -384,3 +384,64 @@ char _sql_g_req(int sd, struct MessageGRequest * req, struct MessageGResponse * 
     mysql_library_end();
     return SAFE_M_SUCCESS;
 }   
+
+char _sql_h_req(int sd, struct MessageHRequest * req, struct MessageHResponse * res)
+{
+    char id[USER_ID_LENGTH + 1];
+    memcpy(id, req->id, sizeof(id) - 1);
+    id[sizeof(id) - 1] = '\0';
+
+    char token_buffer[TOKEN_SIZE + 1];
+    memcpy(token_buffer, req->token, sizeof(token_buffer) - 1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
+
+    char u_id[U_ID_LENGTH + 1];
+    memcpy(u_id, req->u_id, sizeof(u_id) - 1);
+    u_id[sizeof(u_id) - 1] = '\0';
+
+    mysql_library_init(0, NULL, NULL);
+    MYSQL *conn = mysql_init(NULL);
+    mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
+
+    // + id 확인
+    create_table_ID_PW(sd, conn);
+    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_ID_NOT_EXISTS;
+    }
+
+    // + token 확인
+    create_table_LOGIN_TOKEN(sd, conn);
+    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_INVALID_TOKEN;
+    }
+
+    // + u_id 확인
+
+    create_table_POWER_LIST(sd, conn);
+    if(!check_valid_u_id(sd, conn, u_id)){
+        mysql_close(conn);
+        mysql_library_end();
+        return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    // + TEM, HUM, DUST 테이블 생성
+    create_table_TEM(sd, conn, u_id);
+    create_table_HUM(sd, conn, u_id);
+    create_table_DUST(sd, conn, u_id);
+    
+    // + TEM, HUM, DUST 테이블에서 날짜로 행 가져와서 1달, 1주, 1일, 현재 평균 구하기
+    get_average_tem(sd, conn, u_id, res);
+
+    get_average_hum(sd, conn, u_id, res);
+
+    get_average_dust(sd, conn, u_id, res);
+
+
+    mysql_close(conn);
+    mysql_library_end();
+    return SAFE_M_SUCCESS;
+}

@@ -114,6 +114,29 @@ struct MessageGResponse{
     double hole_0_now;
 };
 
+struct MessageHRequest{
+    char id[USER_ID_LENGTH];
+    char token[TOKEN_SIZE];
+    char u_id[U_ID_LENGTH];
+};
+
+struct MessageHResponse{
+    char type;
+    char safe_m_err;
+    double tem_month;
+    double hum_month;
+    double dust_month;
+    double tem_week;
+    double hum_week;
+    double dust_week;
+    double tem_day;
+    double hum_day;
+    double dust_day;
+    double tem_now;
+    double hum_now;
+    double dust_now;
+};
+
 struct MessageJRequest{
     char id[USER_ID_LENGTH];
     char token[TOKEN_SIZE];

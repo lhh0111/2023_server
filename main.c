@@ -210,6 +210,12 @@ void protocol_implementation(int sd, int message_type){
       char safe_m_err = _sql_g_req(sd, &req, &res);
       _send_g_res(sd, safe_m_err, res);
    }
+   else if(message_type==MESSAGE_H){
+      struct MessageHRequest req;
+      _get_req(sd, &req, sizeof(req));
+      struct MessageGResponse res;
+      char safe_m_err = _sql_h_req(sd, &req, &res);
+   }
    else if(message_type==MESSAGE_J){
       struct MessageJRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
