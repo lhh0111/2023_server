@@ -1,83 +1,120 @@
 #include "sql_request.h"
-#include "sql_constant.h"
 #include "time.h"
 #include <stdlib.h>
 #include "sql_basic.h"
-#include "safe_m_constant.h"
+#include <stdlib.h>
+#include <string.h>
+#include "mysql.h"
+#include <stdint.h>
+#include "sql_wrapper.h"
 
-void _sql_a_req(int sd, struct MessageARequest * req)
+char _sql_a_req(struct MessageARequest * req)
 {
     char u_id[U_ID_LENGTH + 1];
     memcpy(u_id, req->u_id, U_ID_LENGTH);
     u_id[sizeof(u_id) - 1] = '\0';
 
-    int sql_err = SQL_SUCCESS;
-
-    mysql_library_init(0, NULL, NULL);
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    create_table_REG(sd, conn);
-    delete_from_table_REG(sd, conn, u_id);
-    insert_into_table_REG(sd, conn, u_id);
+    int err;
+    if((err = create_table_REG(conn))!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if((err = delete_from_table_REG(conn, u_id))!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if((err = insert_into_table_REG(conn, u_id))!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    Mysql_close(conn);
+    return SAFE_M_SUCCESS;
+
 }
 
 /* 요청메시지 B에 있는 내용들을 데이터 베이스에 저장함. U_ID의 RELAY_REQ 테이블에서 릴레이 모듈 제어 예약 정보를 얻어 *relay_status에 저장하는 함수
 mysql 작업 중 오류가 발생하면 SQL_ERROR를 반환함. */
-void _sql_b_req(int sd, struct MessageBRequest * req, char * relay_req)
+char _sql_b_req(struct MessageBRequest * req, struct MessageBResponse * res)
 {
     char u_id[sizeof(req->u_id) + 1];
     memcpy(u_id, req->u_id, sizeof(req->u_id));
     u_id[sizeof(u_id) - 1] = '\0';
 
-
-    mysql_library_init(0, NULL, NULL);
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    create_table_POWER_LIST(sd, conn);
-    if(check_valid_u_id(sd, conn, u_id)){
+    int err;
+    if((err = create_table_POWER_LIST(conn)) != SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    bool valid_u_id;
+    if((err = check_valid_u_id(conn, u_id, &valid_u_id)) != SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(valid_u_id){
         // ENERGY
-        create_table_ENERGY(sd, conn, u_id);
-        insert_into_table_ENERGY(sd, conn, u_id, req->hole_2_energy, req->hole_1_energy, req->hole_0_energy, req->energy_interval);
+        if((err = create_table_ENERGY(conn, u_id)) != SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if((err = insert_into_table_ENERGY(conn, u_id, req->hole_2_energy, req->hole_1_energy, req->hole_0_energy, req->energy_interval)) != SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        
 
         // TEMPERATURE
-        create_table_TEM(sd, conn, u_id);
-        insert_into_table_TEM(sd, conn, u_id, req->tem);
+        if((err = create_table_TEM(conn, u_id))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if((err = insert_into_table_TEM(conn, u_id, req->tem))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
 
         // HUM
-        create_table_HUM(sd, conn, u_id);
-        insert_into_table_HUM(sd, conn, u_id, req->hum);
+        if((err = create_table_HUM(conn, u_id))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if((err = insert_into_table_HUM(conn, u_id, req->hum))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
 
-    // DUST
-        create_table_DUST(sd, conn, u_id);
-        insert_into_table_DUST(sd, conn, u_id, req->dust);
-
+        // DUST
+        if((err = create_table_DUST(conn, u_id))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if((err = insert_into_table_DUST(conn, u_id, req->dust))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        
     
         // get relay_request information
-        create_table_RELAY_REQ(sd, conn, u_id);
-
-        MYSQL_RES * result;
-
-        select_from_table_RELAY_REQ(sd, conn, u_id, &result);
-        MYSQL_ROW row;
-        if(mysql_num_rows(result)>0){ // 로컬 api들은 errno을 초기화하지 않음.
-            row = mysql_fetch_row(result);
-            *relay_req=*(row[0]);
+        if((err = create_table_RELAY_REQ(conn, u_id))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
         }
-        else{
-            *relay_req=RELAY_NO_REQ;
+        if((err = get_relay_req(conn, u_id, &(res->relay_req)))!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
         }
-        mysql_free_result(result);
+
     }
-
-    mysql_close(conn);
-    mysql_library_end();
-
-    return;
+    Mysql_close(conn);
+    return SAFE_M_SUCCESS;
 }
 
-char _sql_c_req(int sd, struct MessageCRequest *req)
+char _sql_c_req(struct MessageCRequest *req)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, USER_ID_LENGTH);
@@ -91,82 +128,95 @@ char _sql_c_req(int sd, struct MessageCRequest *req)
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    create_table_ID_PW(sd, conn);
+    
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    bool duplicated = check_duplicated_id_from_table_ID_PW(sd, conn, id);
-    char safe_m_err;
+    bool duplicated;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &duplicated)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
     if(duplicated==false){
-        insert_into_table_ID_PW(sd, conn, id, pw);
-        safe_m_err = SAFE_M_SUCCESS;
+        if(insert_into_table_ID_PW(conn, id, pw)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        return SAFE_M_SUCCESS;
     }
     else{
-        safe_m_err = SAFE_M_DUPLICATED_ID;
+        Mysql_close(conn);
+        return SAFE_M_DUPLICATED_ID;
     }
-
-    mysql_close(conn);
-    mysql_library_end();
-
-    return safe_m_err;
 }
 
-// *token ~ *(token + token_size - 2) 까지 무작위 A~Z로 채우고 *(token + token_size - 1)을 '\0'으로 채우는 함수 
+// *token ~ *(token + token_size - 1) 까지 무작위 A~Z로 채우는 함수 
 void set_token(char * token_buffer, int token_buffer_size)
 {
     srand(time(NULL));
     char * temp = token_buffer;
-    while(temp < token_buffer + token_buffer_size - 1){
+    while(temp < token_buffer + token_buffer_size){
         *temp = rand()%26 + 65; // 알파벳 대문자 저장
         temp++;
     }
-    *temp = '\0';
     return;
 }
 
-char _sql_d_req(int sd, struct MessageDRequest *req, char * token_buffer, int token_buffer_size)
+char _sql_d_req(struct MessageDRequest *req, struct MessageDResponse * res)
 {
-    set_token(token_buffer, token_buffer_size); // token_buffer will be null-terminated
+    set_token(res->token, sizeof(res->token)); 
 
     char id[USER_ID_LENGTH + 1];
-    memcpy(id, req->id, USER_ID_LENGTH);
+    memcpy(id, req->id, sizeof(id) - 1);
     id[sizeof(id) - 1] = '\0';
 
     char pw[USER_PW_LENGTH + 1];
-    memcpy(pw, req->pw, USER_PW_LENGTH);
+    memcpy(pw, req->pw, sizeof(pw) - 1);
     pw[sizeof(pw) - 1] = '\0';
 
-    
-
-
-    char safe_m_err = SAFE_M_SUCCESS;
+    char token_buffer[sizeof(res->token) + 1];
+    memcpy(token_buffer, res->token, sizeof(token_buffer)-1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
 
     mysql_library_init(0, NULL, NULL);
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    create_table_ID_PW(sd, conn);
-    
-
-    if(check_valid_id_pw(sd, conn, id, pw)){
-        safe_m_err = SAFE_M_SUCCESS;
-        
-        create_table_LOGIN_TOKEN(sd, conn);
-
-        delete_from_table_LOGIN_TOKEN(sd, conn, id);
-
-        insert_into_table_LOGIN_TOKEN(sd, conn, id, token_buffer);
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    bool valid_id_pw;
+    if(check_valid_id_pw(conn, id, pw, &valid_id_pw)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(valid_id_pw){
+        if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if(delete_from_table_LOGIN_TOKEN(conn, id)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if(insert_into_table_LOGIN_TOKEN(conn, id, token_buffer)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        Mysql_close(conn);
+        return SAFE_M_SUCCESS;
     }
     else{
-        safe_m_err = SAFE_M_INVALID_ID_PW;
+        Mysql_close(conn);
+        return SAFE_M_INVALID_ID_PW;
     }
-
-    
-    mysql_close(conn);
-    mysql_library_end();
-
-    return safe_m_err;
 }
 
-char _sql_e_req(int sd, struct MessageERequest * req, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
+char _sql_e_req(struct MessageERequest * req, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, USER_ID_LENGTH);
@@ -180,41 +230,62 @@ char _sql_e_req(int sd, struct MessageERequest * req, char (**power_list)[U_ID_L
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    char safe_m_err = SAFE_M_SUCCESS;
+    bool check_dup_id;
 
-    create_table_ID_PW(sd, conn);
-    if(check_duplicated_id_from_table_ID_PW(sd, conn, id)){
-        create_table_LOGIN_TOKEN(sd, conn);
-        if(check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token)){
-            create_table_POWER_TO_USER(sd, conn);
-            printf("here");
-            select_from_table_POWER_TO_USER(sd, conn, id, power_list, power_number);
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &check_dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    if(check_dup_id){
+        
+        if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        bool valid_token;
+        if(check_valid_token_from_LOGIN_TOKEN(conn, id, token, &valid_token)!=SQL_API_SUCCESS){
+            Mysql_close(conn);
+            return SAFE_M_SQL_API_FAIL;
+        }
+        if(valid_token){
+            if(create_table_POWER_TO_USER(conn)!=SQL_API_SUCCESS){
+                Mysql_close(conn);
+                return SAFE_M_SQL_API_FAIL;
+            }
+
+            if(select_from_table_POWER_TO_USER(conn, id, power_list, power_number)!=SQL_API_SUCCESS){
+                Mysql_close(conn);
+                return SAFE_M_SQL_API_FAIL;
+            }
+            Mysql_close(conn);
+            return SAFE_M_SUCCESS;
         }
         else{
-            safe_m_err = SAFE_M_INVALID_TOKEN;
+            Mysql_close(conn);
+            return SAFE_M_INVALID_TOKEN;
         }
     }
     else{
-        safe_m_err = SAFE_M_ID_NOT_EXISTS;
+        Mysql_close(conn);
+        return SAFE_M_ID_NOT_EXISTS;
     }
-
-    mysql_close(conn);
-    mysql_library_end();
-
-    return safe_m_err;
-
 }
 
-char _sql_j_req(int sd, struct MessageJRequest * req)
+char _sql_j_req(struct MessageJRequest * req)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, sizeof(id) - 1);
     id[sizeof(id) - 1] = '\0';
 
-    char token[TOKEN_SIZE + 1];
-    memcpy(token, req->token, sizeof(token) - 1);
-    token[sizeof(token) - 1] = '\0';
+    char token_buffer[TOKEN_SIZE + 1];
+    memcpy(token_buffer, req->token, sizeof(token_buffer) - 1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
 
     char u_id[U_ID_LENGTH + 1];
     memcpy(u_id, req->u_id, sizeof(u_id) - 1);
@@ -225,53 +296,88 @@ char _sql_j_req(int sd, struct MessageJRequest * req)
     MYSQL *conn = mysql_init(NULL);
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
-    char temp_query[300];
-
-    create_table_ID_PW(sd, conn);
-
-    bool id_exists = check_duplicated_id_from_table_ID_PW(sd, conn, id);
-
-    char safe_m_err = SAFE_M_SUCCESS;
-    if(!id_exists){
-        safe_m_err = SAFE_M_ID_NOT_EXISTS;
-    }
-    else{ // check login token
-        create_table_LOGIN_TOKEN(sd,conn);
-
-        if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token)){
-            safe_m_err = SAFE_M_INVALID_TOKEN;
-        }
-        else{
-            update_token_from_LOGIN_TOKEN(sd, conn, id);
-
-            create_table_POWER_LIST(sd, conn);
-            if(check_valid_u_id(sd, conn, u_id)){
-                create_table_REG(sd, conn);
-                
-                if(check_sync_with_REG(sd, conn, u_id)){
-                    create_table_POWER_TO_USER(sd, conn);
-
-                    delete_from_table_POWER_TO_USER(sd, conn, u_id);
-                
-                    insert_into_table_POWER_TO_USER(sd, conn, u_id, id);
-                }
-                else{
-                    safe_m_err = SAFE_M_NOT_SYNC_WITH_REG;
-                }
-            }
-            else{
-                safe_m_err = SAFE_M_U_ID_NOT_EXISTS;
-            }
-        }
+    // + id 확인
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
     }
 
-    mysql_close(conn);
-    mysql_library_end();
+    bool dup_id;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    return safe_m_err;
+    if(!dup_id){
+        Mysql_close(conn);
+        return SAFE_M_ID_NOT_EXISTS;
+    }
+
+    // + token 확인
+    if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_token;
+    if(check_valid_token_from_LOGIN_TOKEN(conn, id, token_buffer, &valid_token)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!valid_token){
+        Mysql_close(conn);
+        return SAFE_M_INVALID_TOKEN;
+    }
+
+    // + u_id 확인
+
+    if(create_table_POWER_LIST(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_u_id;
+    if(check_valid_u_id(conn, u_id, &valid_u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!valid_u_id){
+        Mysql_close(conn);
+        return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    if(create_table_REG(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    bool reg_sync;
+    if(check_sync_with_REG(conn, u_id, &reg_sync)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!reg_sync){
+        Mysql_close(conn);
+        return SAFE_M_NOT_SYNC_WITH_REG;
+    }
+    if(create_table_POWER_TO_USER(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(delete_from_table_POWER_TO_USER(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(insert_into_table_POWER_TO_USER(conn, u_id, id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    Mysql_close(conn);
+
+    return SAFE_M_SUCCESS;
 }
 
-char _sql_f_req(int sd, struct MessageFRequest * req)
+char _sql_f_req(struct MessageFRequest * req)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, sizeof(id) - 1);
@@ -293,41 +399,72 @@ char _sql_f_req(int sd, struct MessageFRequest * req)
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
     // + id 확인
-    create_table_ID_PW(sd, conn);
-    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    bool dup_id;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!dup_id){
+        Mysql_close(conn);
         return SAFE_M_ID_NOT_EXISTS;
     }
 
     // + token 확인
-    create_table_LOGIN_TOKEN(sd, conn);
-    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_token;
+    if(check_valid_token_from_LOGIN_TOKEN(conn, id, token_buffer, &valid_token)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!valid_token){
+        Mysql_close(conn);
         return SAFE_M_INVALID_TOKEN;
     }
 
     // + u_id 확인
 
-    create_table_POWER_LIST(sd, conn);
-    if(!check_valid_u_id(sd, conn, u_id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_POWER_LIST(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_u_id;
+    if(check_valid_u_id(conn, u_id, &valid_u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!valid_u_id){
+        Mysql_close(conn);
         return SAFE_M_U_ID_NOT_EXISTS;
     }
 
     // + RELAY_REQ 테이블 생성
-    create_table_RELAY_REQ(sd, conn, u_id);
-    // + RELAY_REQ에 예약 후 리턴
-    insert_into_table_RELAY_REQ(sd, conn, u_id, relay_req);
+    if(create_table_RELAY_REQ(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    mysql_close(conn);
-    mysql_library_end();
+    // + RELAY_REQ에 예약 후 리턴
+    if(insert_into_table_RELAY_REQ(conn, u_id, relay_req)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    Mysql_close(conn);
     return SAFE_M_SUCCESS;
 }
 
-char _sql_g_req(int sd, struct MessageGRequest * req, struct MessageGResponse * res)
+char _sql_g_req(struct MessageGRequest * req, struct MessageGResponse * res)
 {
 
     char id[USER_ID_LENGTH + 1];
@@ -347,45 +484,85 @@ char _sql_g_req(int sd, struct MessageGRequest * req, struct MessageGResponse * 
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
     // + id 확인
-    create_table_ID_PW(sd, conn);
-    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    bool dup_id;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!dup_id){
+        Mysql_close(conn);
         return SAFE_M_ID_NOT_EXISTS;
     }
 
     // + token 확인
-    create_table_LOGIN_TOKEN(sd, conn);
-    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_token;
+    if(check_valid_token_from_LOGIN_TOKEN(conn, id, token_buffer, &valid_token)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!valid_token){
+        Mysql_close(conn);
         return SAFE_M_INVALID_TOKEN;
     }
 
     // + u_id 확인
 
-    create_table_POWER_LIST(sd, conn);
-    if(!check_valid_u_id(sd, conn, u_id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_POWER_LIST(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_u_id;
+    if(check_valid_u_id(conn, u_id, &valid_u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!valid_u_id){
+        Mysql_close(conn);
         return SAFE_M_U_ID_NOT_EXISTS;
     }
 
     // + ENERGY 테이블 생성
-    create_table_ENERGY(sd, conn, u_id);
+    if(create_table_ENERGY(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
     
     // + ENERGY 테이블에서 날짜로 행 가져와서 특정 기간동안의 평균 전력 구하기
-    get_average_power_month(sd, conn, u_id, res);
-    get_average_power_week(sd, conn, u_id, res);
-    get_average_power_day(sd, conn, u_id, res);
-    get_average_power_now(sd, conn, u_id, res);
+    if(get_average_power_month(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_power_week(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_power_day(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_power_now(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    mysql_close(conn);
-    mysql_library_end();
+    Mysql_close(conn);
     return SAFE_M_SUCCESS;
 }   
 
-char _sql_h_req(int sd, struct MessageHRequest * req, struct MessageHResponse * res)
+char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
 {
     char id[USER_ID_LENGTH + 1];
     memcpy(id, req->id, sizeof(id) - 1);
@@ -404,44 +581,204 @@ char _sql_h_req(int sd, struct MessageHRequest * req, struct MessageHResponse * 
     mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
 
     // + id 확인
-    create_table_ID_PW(sd, conn);
-    if(!check_duplicated_id_from_table_ID_PW(sd, conn, id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    bool dup_id;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!dup_id){
+        Mysql_close(conn);
         return SAFE_M_ID_NOT_EXISTS;
     }
 
     // + token 확인
-    create_table_LOGIN_TOKEN(sd, conn);
-    if(!check_valid_token_from_LOGIN_TOKEN(sd, conn, id, token_buffer)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_token;
+    if(check_valid_token_from_LOGIN_TOKEN(conn, id, token_buffer, &valid_token)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!valid_token){
+        Mysql_close(conn);
         return SAFE_M_INVALID_TOKEN;
     }
 
     // + u_id 확인
 
-    create_table_POWER_LIST(sd, conn);
-    if(!check_valid_u_id(sd, conn, u_id)){
-        mysql_close(conn);
-        mysql_library_end();
+    if(create_table_POWER_LIST(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_u_id;
+    if(check_valid_u_id(conn, u_id, &valid_u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!valid_u_id){
+        Mysql_close(conn);
         return SAFE_M_U_ID_NOT_EXISTS;
     }
 
+
     // + TEM, HUM, DUST 테이블 생성
-    create_table_TEM(sd, conn, u_id);
-    create_table_HUM(sd, conn, u_id);
-    create_table_DUST(sd, conn, u_id);
+    if(create_table_TEM(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(create_table_HUM(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(create_table_DUST(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
     
     // + TEM, HUM, DUST 테이블에서 날짜로 행 가져와서 1달, 1주, 1일, 현재 평균 구하기
-    get_average_tem(sd, conn, u_id, res);
+    if(get_average_tem_month(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_tem_week(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_tem_day(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_tem_now(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    get_average_hum(sd, conn, u_id, res);
+    if(get_average_hum_month(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_hum_week(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_hum_day(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_hum_now(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
 
-    get_average_dust(sd, conn, u_id, res);
+    if(get_average_dust_month(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_dust_week(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_dust_day(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(get_average_dust_now(conn, u_id, res)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    Mysql_close(conn);
+    return SAFE_M_SUCCESS;
+}
 
+char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
+{
+    char id[USER_ID_LENGTH + 1];
+    memcpy(id, req->id, sizeof(id) - 1);
+    id[sizeof(id) - 1] = '\0';
 
-    mysql_close(conn);
-    mysql_library_end();
+    char token_buffer[TOKEN_SIZE + 1];
+    memcpy(token_buffer, req->token, sizeof(token_buffer) - 1);
+    token_buffer[sizeof(token_buffer) - 1] = '\0';
+
+    char u_id[U_ID_LENGTH + 1];
+    memcpy(u_id, req->u_id, sizeof(u_id) - 1);
+    u_id[sizeof(u_id) - 1] = '\0';
+
+    mysql_library_init(0, NULL, NULL);
+    MYSQL *conn = mysql_init(NULL);
+    mysql_real_connect(conn, "localhost", "root", "", "user_info", 0, NULL, 0);
+
+    // + id 확인
+    if(create_table_ID_PW(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    bool dup_id;
+    if(check_duplicated_id_from_table_ID_PW(conn, id, &dup_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!dup_id){
+        Mysql_close(conn);
+        return SAFE_M_ID_NOT_EXISTS;
+    }
+
+    // + token 확인
+    if(create_table_LOGIN_TOKEN(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_token;
+    if(check_valid_token_from_LOGIN_TOKEN(conn, id, token_buffer, &valid_token)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    if(!valid_token){
+        Mysql_close(conn);
+        return SAFE_M_INVALID_TOKEN;
+    }
+
+    // + u_id 확인
+
+    if(create_table_POWER_LIST(conn)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    
+    bool valid_u_id;
+    if(check_valid_u_id(conn, u_id, &valid_u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(!valid_u_id){
+        Mysql_close(conn);
+        return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    if(create_table_RELAY_REQ(conn, u_id)!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+
+    if(get_relay_req(conn, u_id, &(res->relay_req))!=SQL_API_SUCCESS){
+        Mysql_close(conn);
+        return SAFE_M_SQL_API_FAIL;
+    }
+    Mysql_close(conn);
     return SAFE_M_SUCCESS;
 }

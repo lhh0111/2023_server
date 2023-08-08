@@ -6,7 +6,11 @@
         "sigaction.h": "c",
         "mysql.h": "c",
         "inet.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "stddef.h": "c",
+        "stdint.h": "c",
+        "unix_wrapper.h": "c",
+        "structure.h": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }

@@ -1,92 +1,47 @@
+#include "sql_wrapper.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "mysql.h"
 #include "sql_basic.h"
-#include "structure_message.h"
-#include "unix_wrapper.h"
+#include "define.h"
+#include "structure.h"
 
-void send_exit_with_sql_error(int sd)
-{
-    char res[] = RESPONSE_SQL_ERROR;
-    char * temp = res;
-    while(temp < res + sizeof(res)){
-        Write(sd, temp, 1);
-        temp++;
-    }
-    char test;
-    while(true){
-        Read(sd, &test, 1);
-    }
-}
+#define MYSQL_QUERY(conn_m, q_m, err_m) if((err_m = Mysql_query(conn_m, q_m))!=SQL_API_SUCCESS){return err_m;} 
+#define MYSQL_STORE_RESULT(conn_m, result_m, err_m) if((err_m = Mysql_store_result(conn_m, &result_m))!=SQL_API_SUCCESS){return err_m;}
 
-void error_occured(int sd, MYSQL * conn)
-{
-    if(mysql_errno(conn)!=0){ // mysql_store_result()의 반환값이 NULL일 때, 정말 MYSQL 측의 에러인지, 아니면 이전 SQL문에 의한 정상적인 반환인지 판단하기 위한 조건문.
-        fprintf(stderr, "%s, %d, %s\n", mysql_error(conn), mysql_errno(conn), mysql_sqlstate(conn));
-        mysql_close(conn);
-        mysql_library_end();
-        send_exit_with_sql_error(sd);
-    }
-}
 
-int Mysql_query(int sd, MYSQL * conn, const char *q)
-{
-    int n;
-    if((n = mysql_query(conn, q))!=0){
-        error_occured(sd, conn);
-        return n;
-    }
-    else{
-        return n;
-    }
-}
-
-MYSQL_RES * Mysql_store_result(int sd, MYSQL * conn)
-{
-    MYSQL_RES * result;
-    if((result = mysql_store_result(conn))==NULL){ // 이전 쿼리문이 result set을 주지 않는 쿼리문이거나, 오류가 났을 때 true
-        error_occured(sd, conn); // 만약 프로세스 종료 없이 이 함수에서 return한다면 이전 쿼리문의 특성에 의해 NULL이 반환된 것임.
-        return result;
-    }
-    else{
-        return result;
-    }
-}
-
-void create_table_REG(int sd, MYSQL * conn)
+int create_table_REG(MYSQL * conn)
 {
     char temp_query[300];
-
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS power_info.REG("REG_COL_0_NAME" "REG_COL_0_TYPE", "REG_COL_1_NAME" "REG_COL_1_TYPE")");
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
+    return Mysql_query(conn, temp_query);
 
-    error_occured(sd, conn);
 }
 
-void delete_from_table_REG(int sd, MYSQL * conn, const char * u_id)
+int delete_from_table_REG(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM power_info.REG WHERE " REG_COL_0_NAME " = '%s'", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_REG(int sd, MYSQL * conn, const char * u_id)
+int insert_into_table_REG(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO power_info.REG VALUES('%s', now())", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_ENERGY(int sd, MYSQL * conn, const char * u_id)
+int create_table_ENERGY(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
@@ -95,195 +50,156 @@ void create_table_ENERGY(int sd, MYSQL * conn, const char * u_id)
     ", " ENERGY_COL_1_NAME " " ENERGY_COL_1_TYPE ", " ENERGY_COL_2_NAME " " ENERGY_COL_2_TYPE 
     ", " ENERGY_COL_3_NAME " " ENERGY_COL_3_TYPE ", " ENERGY_COL_4_NAME " " ENERGY_COL_4_TYPE")",u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_ENERGY(int sd, MYSQL * conn, const char * u_id, double h2, double h1, double h0, double interval)
+int insert_into_table_ENERGY(MYSQL * conn, const char * u_id, double h2, double h1, double h0, double interval)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_ENERGY VALUES(%.2f, %.2f, %.2f, %.2f, now())", u_id, h2, h1, h0, interval);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
-
-
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_TEM(int sd, MYSQL * conn, const char * u_id)
+int  create_table_TEM(MYSQL * conn, const char * u_id)
 {
-    int sql_err = SQL_SUCCESS;
-
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_TEM (" TEM_COL_0_NAME " " TEM_COL_0_TYPE ", " TEM_COL_1_NAME " " TEM_COL_1_TYPE ")", u_id); 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_TEM(int sd, MYSQL * conn, const char * u_id, double tem)
+int insert_into_table_TEM(MYSQL * conn, const char * u_id, double tem)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_TEM VALUES(%.2f, now())", u_id, tem);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_HUM(int sd, MYSQL * conn, const char * u_id)
+int create_table_HUM(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_HUM (" HUM_COL_0_NAME " " HUM_COL_0_TYPE ", " HUM_COL_1_NAME " " HUM_COL_1_TYPE ")", u_id); 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_HUM(int sd, MYSQL * conn, const char * u_id, double hum)
+int insert_into_table_HUM(MYSQL * conn, const char * u_id, double hum)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_HUM VALUES(%.2f, now())", u_id, hum);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_DUST(int sd, MYSQL * conn, const char * u_id)
+int create_table_DUST(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_DUST (" DUST_COL_0_NAME " " DUST_COL_0_TYPE ", " DUST_COL_1_NAME " " DUST_COL_1_TYPE ")", u_id); 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_DUST(int sd, MYSQL * conn, const char * u_id, double dust)
+int insert_into_table_DUST(MYSQL * conn, const char * u_id, double dust)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_DUST VALUES(%.2f, now())", u_id, dust);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id)
+int create_table_RELAY_REQ(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_RELAY_REQ (" RELAY_REQ_COL_0_NAME " " RELAY_REQ_COL_0_TYPE ")",u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-void select_from_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, MYSQL_RES ** result)
-{
-    char temp_query[300];
-
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM power_info.%s_RELAY_REQ", u_id);
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
-
-    *result = mysql_store_result(conn); // 에러가 일어났다면 result에는 NULL이 저장됨.
-    error_occured(sd, conn);
-}
-
-void create_table_ID_PW(int sd, MYSQL * conn)
+int create_table_ID_PW(MYSQL * conn)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS user_info.ID_PW (" ID_PW_COL_0_NAME " " ID_PW_COL_0_TYPE ", " ID_PW_COL_1_NAME " " ID_PW_COL_1_TYPE")");
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-bool check_duplicated_id_from_table_ID_PW(int sd, MYSQL * conn, const char * id)
+int check_duplicated_id_from_table_ID_PW( MYSQL * conn, const char * id, bool * p_check)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.ID_PW WHERE " ID_PW_COL_0_NAME " = '%s'", id); 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-    error_occured(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err)
+    
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err)
 
-    MYSQL_RES * result = mysql_store_result(conn);
-    error_occured(sd, conn);
-
-    bool duplicated;
     if(mysql_num_rows(result)>0){
-        duplicated = true;
+        *p_check = true;
     }
     else{
-        duplicated = false;
+        *p_check = false;
     }
-
-    return duplicated;
+    mysql_free_result(result);
+    return err;
 }
 
-void insert_into_table_ID_PW(int sd, MYSQL * conn, const char * id, const char * pw)
+int insert_into_table_ID_PW(MYSQL * conn, const char * id, const char * pw)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO user_info.ID_PW VALUES('%s', '%s')", id, pw);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    mysql_query(conn, temp_query);
-
-    error_occured(sd, conn);
+    return Mysql_query(conn, temp_query);
 }
 
-bool check_valid_id_pw(int sd, MYSQL * conn, const char * id, const char * pw)
+int check_valid_id_pw(MYSQL * conn, const char * id, const char * pw, bool * p_check)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.ID_PW WHERE "ID_PW_COL_0_NAME" = '%s' AND "ID_PW_COL_1_NAME" = '%s'", id, pw);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err)
 
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    MYSQL_RES *result;
+    MYSQL_STORE_RESULT(conn, result, err)
+
     if(mysql_num_rows(result)==0){
-        mysql_free_result(result);
-        return false;
+        *p_check = false;
     }
     else{
-        mysql_free_result(result);
-        return true;
+        *p_check = true;
     }
+    mysql_free_result(result);
+    return err;
 }
 
-void create_table_LOGIN_TOKEN(int sd, MYSQL * conn)
+int create_table_LOGIN_TOKEN(MYSQL * conn)
 {
     char temp_query[300];
 
@@ -292,198 +208,187 @@ void create_table_LOGIN_TOKEN(int sd, MYSQL * conn)
     ", "LOGIN_TOKEN_COL_1_NAME" "LOGIN_TOKEN_COL_1_TYPE
     ", "LOGIN_TOKEN_COL_2_NAME" "LOGIN_TOKEN_COL_2_TYPE")");
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-void delete_from_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id)
+int delete_from_table_LOGIN_TOKEN(MYSQL * conn, const char * id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM user_info.LOGIN_TOKEN WHERE "LOGIN_TOKEN_COL_0_NAME" = '%s'", id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer)
+int insert_into_table_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO user_info.LOGIN_TOKEN VALUES('%s', '%s', now())", id, token_buffer);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-bool check_valid_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer)
+int check_valid_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer, bool * p_check)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.LOGIN_TOKEN WHERE ("LOGIN_TOKEN_COL_0_NAME" = '%s') AND ("LOGIN_TOKEN_COL_1_NAME" = '%s') AND ("LOGIN_TOKEN_COL_2_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 30 MINUTE) AND NOW())", id, token_buffer);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err)
 
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    MYSQL_RES *result;
+    MYSQL_STORE_RESULT(conn, result, err)
+
     if(mysql_num_rows(result)==0){
-        mysql_free_result(result);
-        return false;
+        *p_check = false;
     }
     else{
-        mysql_free_result(result);
-        return true;
+        *p_check = true;
     }
+
+    mysql_free_result(result);
+    return err;
 }
 
-void update_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id)
+int update_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"UPDATE user_info.LOGIN_TOKEN SET "LOGIN_TOKEN_COL_2_NAME"=now() WHERE "LOGIN_TOKEN_COL_0_NAME"='%s'", id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-void create_table_POWER_TO_USER(int sd, MYSQL * conn)
+int create_table_POWER_TO_USER(MYSQL * conn)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS user_info.POWER_TO_USER("POWER_TO_USER_COL_0_NAME" "POWER_TO_USER_COL_0_TYPE", "POWER_TO_USER_COL_1_NAME" "POWER_TO_USER_COL_1_TYPE")");
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-void delete_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id)
+int delete_from_table_POWER_TO_USER(MYSQL * conn, const char * u_id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "DELETE FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_0_NAME" = '%s'", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
-void insert_into_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id, const char * id)
+int insert_into_table_POWER_TO_USER(MYSQL * conn, const char * u_id, const char * id)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO user_info.POWER_TO_USER VALUES('%s', '%s')", u_id, id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-
-    return;
+    return Mysql_query(conn, temp_query);
 }
 
 // u_id의 멀티탭으로부터 30분 이내에 등록 요청이 왔는 지 확인하는 함수
-bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id)
+int check_sync_with_REG(MYSQL * conn, const char * u_id, bool * p_check)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM power_info.REG WHERE ("REG_COL_0_NAME" = '%s') AND("REG_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 30 MINUTE) AND NOW())", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
     
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    MYSQL_RES *result;
+    MYSQL_STORE_RESULT(conn, result, err);
+
     if(mysql_num_rows(result)==0){
-        mysql_free_result(result);
-        return false;
+        *p_check = false;
     }
     else{
-        mysql_free_result(result);
-        return true;
+        *p_check = true;
     }
+    mysql_free_result(result);
+    return err;
 }
 
-void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
+int select_from_table_POWER_TO_USER(MYSQL * conn, const char * id, char (**power_list)[U_ID_LENGTH], uint32_t * power_number)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "POWER_TO_USER_COL_0_NAME" FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_1_NAME" = '%s'", id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
 
-    MYSQL_RES * result = Mysql_store_result(sd, conn);
-    *power_number = mysql_num_rows(result);
-    putc(*power_number, stdout);
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    *power_number = mysql_num_rows(result); // 멀티탭 개수
     *power_list = (char (*)[U_ID_LENGTH])malloc(*power_number * U_ID_LENGTH);
     char (*temp)[U_ID_LENGTH] = *power_list;
 
     while(temp<*power_list + *power_number){
         MYSQL_ROW row = mysql_fetch_row(result);
-        if(strlen(row[0])!=U_ID_LENGTH){
-            fprintf(stderr, "found error in POWER_TO_USER: u_id length");
-            send_exit_with_sql_error(sd);
-        }
-        else{
-            memcpy(temp++, row[0], U_ID_LENGTH);
-        }
+        memcpy(temp++, row[0], sizeof(*temp));
     }
     mysql_free_result(result);
-    return ;
+    return err;
 }
 
-void create_table_POWER_LIST(int sd, MYSQL * conn)
+int create_table_POWER_LIST(MYSQL * conn)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "CREATE TABLE IF NOT EXISTS power_info.POWER_LIST("POWER_LIST_COL_0_NAME" "POWER_LIST_COL_0_TYPE")");
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    return;
+    return Mysql_query(conn, temp_query);
+
 }
 
-bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id)
+int check_valid_u_id(MYSQL * conn, const char * u_id, bool * p_check)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM power_info.POWER_LIST WHERE "POWER_LIST_COL_0_NAME" ='%s'", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
     
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    MYSQL_RES *result;
+    MYSQL_STORE_RESULT(conn, result, err);
+
     if(mysql_num_rows(result)==0){
-        mysql_free_result(result);
-        return false;
+        *p_check = false;
     }
     else{
-        mysql_free_result(result);
-        return true;
+        *p_check = true;
     }
+    mysql_free_result(result);
+    return err;
 }
 
-void insert_into_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, const char relay_req)
+int insert_into_table_RELAY_REQ(MYSQL * conn, const char * u_id, const char relay_req)
 {
     char temp_query[300];
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "INSERT INTO power_info.%s_RELAY_REQ VALUES('%c')", u_id, relay_req);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
+    return Mysql_query(conn, temp_query);
 
-    return;
 }
 
-void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+int get_average_power_month(MYSQL * conn, const char * u_id, struct MessageGResponse * res)
 {
     char temp_query[300];
 
@@ -491,9 +396,11 @@ void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct Mes
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
     ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
     MYSQL_ROW row = NULL;
     while((row = mysql_fetch_row(result))   !=  NULL){
@@ -507,10 +414,10 @@ void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct Mes
     res->hole_2_month = hole_2/MONTH_TO_SEC; // 평균전력 얻기
     res->hole_1_month = hole_1/MONTH_TO_SEC;
     res->hole_0_month = hole_0/MONTH_TO_SEC;
-    return;
+    return err;
 }
 
-void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+int get_average_power_week(MYSQL * conn, const char * u_id, struct MessageGResponse * res)
 {
     char temp_query[300];
 
@@ -518,9 +425,11 @@ void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct Mess
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
     ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
     MYSQL_ROW row = NULL;
     while((row = mysql_fetch_row(result))   !=  NULL){
@@ -534,10 +443,10 @@ void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct Mess
     res->hole_2_week = hole_2/WEEK_TO_SEC; // 평균전력 얻기
     res->hole_1_week = hole_1/WEEK_TO_SEC;
     res->hole_0_week = hole_0/WEEK_TO_SEC;
-    return;
+    return err;
 }
 
-void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+int get_average_power_day(MYSQL * conn, const char * u_id, struct MessageGResponse * res)
 {
     char temp_query[300];
 
@@ -545,9 +454,11 @@ void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct Messa
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
     ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
     MYSQL_ROW row = NULL;
     while((row = mysql_fetch_row(result))   !=  NULL){
@@ -561,10 +472,10 @@ void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct Messa
     res->hole_2_day = hole_2/DAY_TO_SEC; // 평균전력 얻기
     res->hole_1_day = hole_1/DAY_TO_SEC;
     res->hole_0_day = hole_0/DAY_TO_SEC;
-    return;
+    return err;
 }
 
-void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res)
+int get_average_power_now(MYSQL * conn, const char * u_id, struct MessageGResponse * res)
 {
     char temp_query[300];
 
@@ -572,9 +483,11 @@ void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct Messa
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
     ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     double hole_2 = 0.0;double hole_1 = 0.0;double hole_0 = 0.0;
     MYSQL_ROW row = NULL;
     while((row = mysql_fetch_row(result))   !=  NULL){
@@ -588,10 +501,10 @@ void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct Messa
     res->hole_2_now = hole_2/MINUTE_TO_SEC; // 평균전력 얻기
     res->hole_1_now = hole_1/MINUTE_TO_SEC;
     res->hole_0_now = hole_0/MINUTE_TO_SEC;
-    return;
+    return err;
 }
 
-void get_average_tem_month(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_tem_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -600,9 +513,12 @@ void get_average_tem_month(int sd, MYSQL * conn, const char * u_id, struct Messa
     TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double month = 0.0;
@@ -615,18 +531,16 @@ void get_average_tem_month(int sd, MYSQL * conn, const char * u_id, struct Messa
 
         res->tem_month = month/(double)num_rows; // 평균 얻기
 
-        return;
     }
     else{
         mysql_free_result(result);
         res->tem_month = 0.0;
 
-        return;
     }
-    
+    return err;
 }
 
-void get_average_tem_week(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_tem_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -635,9 +549,11 @@ void get_average_tem_week(int sd, MYSQL * conn, const char * u_id, struct Messag
     TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double week = 0.0;
@@ -650,17 +566,16 @@ void get_average_tem_week(int sd, MYSQL * conn, const char * u_id, struct Messag
 
         res->tem_week = week/(double)num_rows; // 평균 얻기
 
-        return;
     }
     else{
         mysql_free_result(result);
         res->tem_week = 0.0;
 
-        return;
+
     }
-    
+    return err;
 }
-void get_average_tem_day(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_tem_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -669,9 +584,11 @@ void get_average_tem_day(int sd, MYSQL * conn, const char * u_id, struct Message
     TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double day = 0.0;
@@ -684,17 +601,18 @@ void get_average_tem_day(int sd, MYSQL * conn, const char * u_id, struct Message
 
         res->tem_day = day/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->tem_day = 0.0;
 
-        return;
+
     }
+    return err;
     
 }
-void get_average_tem_now(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_tem_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -703,9 +621,11 @@ void get_average_tem_now(int sd, MYSQL * conn, const char * u_id, struct Message
     TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double now = 0.0;
@@ -718,18 +638,18 @@ void get_average_tem_now(int sd, MYSQL * conn, const char * u_id, struct Message
 
         res->tem_now = now/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->tem_now = 0.0;
 
-        return;
+
     }
-    
+    return err;
 }
 
-void get_average_hum_month(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_hum_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -738,9 +658,11 @@ void get_average_hum_month(int sd, MYSQL * conn, const char * u_id, struct Messa
     HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double month = 0.0;
@@ -753,18 +675,17 @@ void get_average_hum_month(int sd, MYSQL * conn, const char * u_id, struct Messa
 
         res->hum_month = month/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->hum_month = 0.0;
 
-        return;
     }
-    
+    return err;
 }
 
-void get_average_hum_week(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+int get_average_hum_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -773,9 +694,11 @@ void get_average_hum_week(int sd, MYSQL * conn, const char * u_id, struct Messag
     HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double week = 0.0;
@@ -788,17 +711,18 @@ void get_average_hum_week(int sd, MYSQL * conn, const char * u_id, struct Messag
 
         res->hum_week = week/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->hum_week = 0.0;
 
-        return;
+
     }
-    
+    return err;
 }
-void get_average_hum_day(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+
+int get_average_hum_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -807,9 +731,11 @@ void get_average_hum_day(int sd, MYSQL * conn, const char * u_id, struct Message
     HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double day = 0.0;
@@ -822,17 +748,18 @@ void get_average_hum_day(int sd, MYSQL * conn, const char * u_id, struct Message
 
         res->hum_day = day/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->hum_day = 0.0;
 
-        return;
+
     }
-    
+    return err;
 }
-void get_average_hum_now(int sd, MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+
+int get_average_hum_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
 
@@ -841,9 +768,11 @@ void get_average_hum_now(int sd, MYSQL * conn, const char * u_id, struct Message
     HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(sd, conn, temp_query);
-    
-    MYSQL_RES *result = Mysql_store_result(sd, conn);
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
     uint64_t num_rows = 0;
     if((num_rows = mysql_num_rows(result))!=0){
         double now = 0.0;
@@ -856,14 +785,181 @@ void get_average_hum_now(int sd, MYSQL * conn, const char * u_id, struct Message
 
         res->hum_now = now/(double)num_rows; // 평균 얻기
 
-        return;
+
     }
     else{
         mysql_free_result(result);
         res->hum_now = 0.0;
 
-        return;
+
     }
+    return err;
+}
+
+int get_average_dust_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "DUST_COL_0_NAME" FROM power_info.%s_DUST WHERE "
+    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double month = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            month += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->dust_month = month/(double)num_rows; // 평균 얻기
+
+
+    }
+    else{
+        mysql_free_result(result);
+        res->dust_month = 0.0;
+
+
+    }
+    return err;
+    
+}
+int get_average_dust_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "DUST_COL_0_NAME" FROM power_info.%s_DUST WHERE "
+    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 WEEK) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double week = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            week += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->dust_week = week/(double)num_rows; // 평균 얻기
+
+    }
+    else{
+        mysql_free_result(result);
+        res->dust_week = 0.0;
+
+    }
+    return err;
+}
+int get_average_dust_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "DUST_COL_0_NAME" FROM power_info.%s_DUST WHERE "
+    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double day = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            day += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->dust_day = day/(double)num_rows; // 평균 얻기
+
+    }
+    else{
+        mysql_free_result(result);
+        res->dust_day = 0.0;
+
+    }
+    return err;
     
 }
 
+int get_average_dust_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "DUST_COL_0_NAME" FROM power_info.%s_DUST WHERE "
+    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    uint64_t num_rows = 0;
+    if((num_rows = mysql_num_rows(result))!=0){
+        double now = 0.0;
+        MYSQL_ROW row = NULL;
+        while((row = mysql_fetch_row(result))   !=  NULL){
+            char * temp;
+            now += strtod(row[0], &temp);
+        }
+        mysql_free_result(result);
+
+        res->dust_now = now/(double)num_rows; // 평균 얻기
+
+
+    }
+    else{
+        mysql_free_result(result);
+        res->dust_month = 0.0;
+
+
+    }
+    return err;
+}
+
+int get_relay_req(MYSQL * conn, const char * u_id, char * p_relay_req)
+{
+    char temp_query[300];
+
+    memset(temp_query, 0, sizeof(temp_query));
+    snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM power_info.%s_RELAY_REQ", u_id);
+    temp_query[sizeof(temp_query) - 1] = '\0';
+    int err;
+    MYSQL_QUERY(conn, temp_query, err);
+
+    MYSQL_RES * result;
+    MYSQL_STORE_RESULT(conn, result, err);
+    int num_rows = 0;
+    if((num_rows = mysql_num_rows(result))  !=  0){
+        MYSQL_ROW row = mysql_fetch_row(result);
+        *p_relay_req = row[0][0];
+        
+    }
+    else{
+        *p_relay_req = '8';
+    }
+    return err;
+}

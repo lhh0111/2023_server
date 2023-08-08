@@ -1,100 +1,89 @@
-#pragma once
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <signal.h>
-#include <sys/wait.h>
+#include "define.h"
+#include "structure.h"
 #include "mysql.h"
-#include "structure_message.h"
-#include "sql_constant.h"
 
-#include "sql_basic.h"
-#include "structure_message.h"
+int create_table_REG(MYSQL * conn);
 
-#define MONTH_TO_SEC 2629800.0
-#define WEEK_TO_SEC 604800.0
-#define DAY_TO_SEC 86400.0
-#define MINUTE_TO_SEC 60.0
+int delete_from_table_REG(MYSQL * conn, const char * u_id);
 
-void error_occured(int sd, MYSQL * conn);
+int insert_into_table_REG(MYSQL * conn, const char * u_id);
 
+int create_table_ENERGY(MYSQL * conn, const char * u_id);
+int insert_into_table_ENERGY(MYSQL * conn, const char * u_id, double h2, double h1, double h0, double interval);
 
-void create_table_REG(int sd, MYSQL * conn);
+int  create_table_TEM(MYSQL * conn, const char * u_id);
 
+int insert_into_table_TEM(MYSQL * conn, const char * u_id, double tem);
+int create_table_HUM(MYSQL * conn, const char * u_id);
 
-void delete_from_table_REG(int sd, MYSQL * conn, const char * u_id);
+int insert_into_table_HUM(MYSQL * conn, const char * u_id, double hum);
+int create_table_DUST(MYSQL * conn, const char * u_id);
 
+int insert_into_table_DUST(MYSQL * conn, const char * u_id, double dust);
+int create_table_RELAY_REQ(MYSQL * conn, const char * u_id);
 
-void insert_into_table_REG(int sd, MYSQL * conn, const char * u_id);
+int create_table_ID_PW(MYSQL * conn);
 
-
-void create_table_ENERGY(int sd, MYSQL * conn, const char * u_id);
-
-void insert_into_table_ENERGY(int sd, MYSQL * conn, const char * u_id, double h2, double h1, double h0, double interval);
+int check_duplicated_id_from_table_ID_PW( MYSQL * conn, const char * id, bool * p_check);
 
 
-void create_table_TEM(int sd, MYSQL * conn, const char * u_id);
+int insert_into_table_ID_PW(MYSQL * conn, const char * id, const char * pw);
 
-void insert_into_table_TEM(int sd, MYSQL * conn, const char * u_id, double tem);
+int check_valid_id_pw(MYSQL * conn, const char * id, const char * pw, bool * p_check);
+
+int create_table_LOGIN_TOKEN(MYSQL * conn);
+int delete_from_table_LOGIN_TOKEN(MYSQL * conn, const char * id);
+
+int insert_into_table_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer);
+
+int check_valid_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer, bool * p_check);
+
+int update_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id);
+
+int create_table_POWER_TO_USER(MYSQL * conn);
+int delete_from_table_POWER_TO_USER(MYSQL * conn, const char * u_id);
+int insert_into_table_POWER_TO_USER(MYSQL * conn, const char * u_id, const char * id);
+
+// u_id의 멀티탭으로부터 30분 이내에 등록 요청이 왔는 지 확인하는 함수
+int check_sync_with_REG(MYSQL * conn, const char * u_id, bool * p_check);
+
+int select_from_table_POWER_TO_USER(MYSQL * conn, const char * id, char (**power_list)[U_ID_LENGTH], uint32_t * power_number);
+
+int create_table_POWER_LIST(MYSQL * conn);
+
+int check_valid_u_id(MYSQL * conn, const char * u_id, bool * p_check);
+
+int insert_into_table_RELAY_REQ(MYSQL * conn, const char * u_id, const char relay_req);
+
+int get_average_power_month(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+int get_average_power_week(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+int get_average_power_day(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+int get_average_power_now(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+
+int get_average_tem_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_tem_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+int get_average_tem_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+int get_average_tem_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+int get_average_hum_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_hum_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_hum_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_hum_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_dust_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_dust_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+
+int get_average_dust_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
 
 
-void create_table_HUM(int sd, MYSQL * conn, const char * u_id);
+int get_average_dust_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
 
 
-void insert_into_table_HUM(int sd, MYSQL * conn, const char * u_id, double hum);
-
-void create_table_DUST(int sd, MYSQL * conn, const char * u_id);
-
-void insert_into_table_DUST(int sd, MYSQL * conn, const char * u_id, double dust);
-
-
-void create_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id);
-
-
-void select_from_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, MYSQL_RES ** result);
-
-void create_table_ID_PW(int sd, MYSQL * conn);
-
-bool check_duplicated_id_from_table_ID_PW(int sd, MYSQL * conn, const char * id);
-
-void insert_into_table_ID_PW(int sd, MYSQL * conn, const char * id, const char * pw);
-
-
-bool check_valid_id_pw(int sd, MYSQL * conn, const char * id, const char * pw);
-
-void create_table_LOGIN_TOKEN(int sd, MYSQL * conn);
-
-void delete_from_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id);
-
-void insert_into_table_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer);
-
-bool check_valid_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id, const char * token_buffer);
-
-void update_token_from_LOGIN_TOKEN(int sd, MYSQL * conn, const char * id);
-
-void create_table_POWER_TO_USER(int sd, MYSQL * conn);
-
-void delete_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id);
-
-void insert_into_table_POWER_TO_USER(int sd, MYSQL * conn, const char * u_id, const char * id);
-
-bool check_sync_with_REG(int sd, MYSQL * conn, const char * u_id);
-
-void select_from_table_POWER_TO_USER(int sd, MYSQL * conn, const char * id, char (**power_list)[8], uint32_t * power_number);
-
-void create_table_POWER_LIST(int sd, MYSQL * conn);
-
-bool check_valid_u_id(int sd, MYSQL * conn, const char * u_id);
-
-void insert_into_table_RELAY_REQ(int sd, MYSQL * conn, const char * u_id, const char relay_req);
-
-void get_average_power_month(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
-
-void get_average_power_week(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
-
-void get_average_power_day(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
-
-void get_average_power_now(int sd, MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+int get_relay_req(MYSQL * conn, const char * u_id, char * p_relay_req);

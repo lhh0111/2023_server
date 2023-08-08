@@ -9,12 +9,11 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include "mysql.h"
-#include "structure_message.h"
 #include "sql_request.h"
-#include "sql_constant.h"
 #include "send_response.h"
 #include "get_request.h"
 #include "unix_wrapper.h"
+#include "safe_m_implementation.h"
 
 
 #define BUF_SIZE 30
@@ -36,8 +35,6 @@ void read_childproc(int sig);
 
 void _get_user_id_pw(int sd, char *user_id_buffer, char *user_pw_buffer);
 int _insert_id_pw(const char* id, const char* pw);
-int check_message_type_from_stream(int sd);
-void protocol_implementation(int sd, int message_type);
 
 
 int main(int argc, char* argv[])
@@ -91,8 +88,7 @@ int main(int argc, char* argv[])
          close(serv_sock);  // 자식 영역에서는 서버 소켓을 닫음(필요없는 소켓을 열어둘필요가 없기때문)
 
          // new code section
-         int message_type = check_message_type_from_stream(clnt_sock);
-         protocol_implementation(clnt_sock, message_type);
+         protocol_implementation(clnt_sock);
          // new code section
 
          while(true){
@@ -133,97 +129,9 @@ void error_handling(char* message)
 
 
 /* sd가 가리키는 스트림(소켓)에 프로토콜의 어떤 메시지가 왔는지를 리턴함. 메시지를 찾을 때까지 블로킹되는 함수.*/
-int check_message_type_from_stream(int sd){
-      char temp;
-      Read(sd, &temp, 1);
-      if(temp==MESSAGE_A_START){
-         return MESSAGE_A;
-      }
-      else if(temp==MESSAGE_B_START){
-         return MESSAGE_B;
-      }
-      else if(temp==MESSAGE_C_START){
-         return MESSAGE_C;
-      }
-      else if(temp==MESSAGE_D_START){
-         return MESSAGE_D;
-      }
-      else if(temp==MESSAGE_E_START){
-         return MESSAGE_E;
-      }
-      else if(temp==MESSAGE_F_START){
-         return MESSAGE_F;
-      }
-      else if(temp==MESSAGE_J_START){
-         return MESSAGE_J;
-      }
-      else return -1;
-}
+
 
 /* 인자로 소켓 디스크립터, 처리할 메시지 종류를 전해주면, 그 스트림으로부터 그 메시지를 읽고 적절한 처리를 한 뒤 응답메시지를 보냄. */
-void protocol_implementation(int sd, int message_type){
-   if (message_type == MESSAGE_A){
-      struct MessageARequest req = {{0}};
-      _get_req(sd, &req, sizeof(req));
-      _sql_a_req(sd, &req);
-      _send_a_res(sd);
-   }
-   else if(message_type==MESSAGE_B){
-      struct MessageBRequest req={{0}};
-      _get_req(sd, &req, sizeof(req));
 
-      char relay_req;
-      _sql_b_req(sd, &req, &relay_req);
-      _send_b_res(sd, relay_req);
-   }
-   else if(message_type==MESSAGE_C){
-      struct MessageCRequest req={{0}};
-      _get_req(sd, &req, sizeof(req));
-      char safe_m_err = _sql_c_req(sd, &req);
-      _send_c_res(sd, safe_m_err);
-   }
-   else if(message_type==MESSAGE_D){
-      struct MessageDRequest req={{0}};
-      _get_req(sd, &req, sizeof(req));
-      char token_buffer[TOKEN_SIZE+1] = {0}; // string
-      char safe_m_err = _sql_d_req(sd, &req, token_buffer, sizeof(token_buffer));
-      _send_d_res(sd, safe_m_err, token_buffer);
-   }
-   else if(message_type==MESSAGE_E){
-      struct MessageERequest req;
-      _get_req(sd, &req, sizeof(req));
-      char (*power_list)[8] = NULL;
-      uint32_t power_number = 0;
-      char safe_m_err = _sql_e_req(sd, &req, &power_list, &power_number);
-      _send_e_res(sd, safe_m_err, power_list, power_number);
-   }
-   else if(message_type==MESSAGE_F){
-      struct MessageFRequest req;
-      _get_req(sd, &req, sizeof(req));
-      char safe_m_err = _sql_f_req(sd, &req);
-      _send_f_res(sd, safe_m_err);
-   }
-   else if(message_type==MESSAGE_G){
-      struct MessageGRequest req;
-      _get_req(sd, &req, sizeof(req));
-      struct MessageGResponse res;
-      char safe_m_err = _sql_g_req(sd, &req, &res);
-      _send_g_res(sd, safe_m_err, res);
-   }
-   else if(message_type==MESSAGE_H){
-      struct MessageHRequest req;
-      _get_req(sd, &req, sizeof(req));
-      struct MessageGResponse res;
-      char safe_m_err = _sql_h_req(sd, &req, &res);
-   }
-   else if(message_type==MESSAGE_J){
-      struct MessageJRequest req={{0}};
-      _get_req(sd, &req, sizeof(req));
-      char safe_m_err = _sql_j_req(sd, &req);
-      _send_j_res(sd, safe_m_err);
-   }
-   
-  return;
-}
 
 
