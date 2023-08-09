@@ -1,5 +1,8 @@
 #include <errno.h>
+<<<<<<< HEAD
 #include "get_request.h"
+=======
+>>>>>>> 0a2697d5ff6e2caa32646c89a9fdb7344b7eeb78
 #include "unix_wrapper.h"
 
 // 에러 처리 코드 추가 필요
@@ -9,6 +12,7 @@ int _get_req(int sd, void * req, int size)
     char * temp = (char *)req;
     while(temp < (char *)req + size){
         Read(sd, temp, 1);
+<<<<<<< HEAD
         temp++
     }
     return 0;
@@ -29,5 +33,8 @@ void _get_req_mcu(int sd, void * req, int type)
             }
             temp++;
         } 
+=======
+        temp++;
+>>>>>>> 0a2697d5ff6e2caa32646c89a9fdb7344b7eeb78
     }
 }
