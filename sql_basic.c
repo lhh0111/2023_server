@@ -954,9 +954,10 @@ int get_relay_req(MYSQL * conn, const char * u_id, char * p_relay_req)
     MYSQL_STORE_RESULT(conn, result, err);
     int num_rows = 0;
     if((num_rows = mysql_num_rows(result))  !=  0){
-        MYSQL_ROW row = mysql_fetch_row(result);
-        *p_relay_req = row[0][0];
-        
+        MYSQL_ROW row;
+        while((row = mysql_fetch_row(result))!=NULL){
+            *p_relay_req = row[0][0];
+        }
     }
     else{
         *p_relay_req = '8';
