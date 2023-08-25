@@ -81,7 +81,7 @@ void protocol_implementation(int sd){
          _send_res(sd, &res, sizeof(res));
          _send_res(sd, power_list, power_number * U_ID_LENGTH);
          free(power_list);
-         printf("m_type : %c, safe_m_err : %d\r\n, power_number : %d", message_type, res.safe_m_err, res.power_number);
+         printf("m_type : %c, safe_m_err : %d, power_number : %d", message_type, res.safe_m_err, res.power_number);
       }
       else{
          printf("m_type : %c, validation check failed..\r\n", message_type);

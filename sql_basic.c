@@ -150,77 +150,83 @@ void insert_into_table_HUM(const char * u_id, double hum)
 void create_table_DUST(const char * u_id)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
 
-    char temp_query[300];
-
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_DUST (" DUST_COL_0_NAME " " DUST_COL_0_TYPE ", " DUST_COL_1_NAME " " DUST_COL_1_TYPE ")", u_id); 
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);Mysql_close(conn);
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_DUST (" DUST_COL_0_NAME " " DUST_COL_0_TYPE ", " DUST_COL_1_NAME " " DUST_COL_1_TYPE ")", u_id); 
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+    }
+    Mysql_close(conn);
+   
 }
 
 void insert_into_table_DUST(const char * u_id, double dust)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
 
-    char temp_query[300];
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_DUST VALUES(%.2f, now())", u_id, dust);
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+    }
 
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO power_info.%s_DUST VALUES(%.2f, now())", u_id, dust);
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);Mysql_close(conn);
+    Mysql_close(conn);
 }
 
 void create_table_RELAY_REQ(const char * u_id)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
 
-    char temp_query[300];
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_RELAY_REQ (" RELAY_REQ_COL_0_NAME " " RELAY_REQ_COL_0_TYPE ")",u_id);
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+    }
 
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS power_info.%s_RELAY_REQ (" RELAY_REQ_COL_0_NAME " " RELAY_REQ_COL_0_TYPE ")",u_id);
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);Mysql_close(conn);
+    Mysql_close(conn);
 }
 
 void create_table_ID_PW(void)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
-
-    char temp_query[300];
-
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS user_info.ID_PW (" ID_PW_COL_0_NAME " " ID_PW_COL_0_TYPE ", " ID_PW_COL_1_NAME " " ID_PW_COL_1_TYPE")");
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);Mysql_close(conn);
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"CREATE TABLE IF NOT EXISTS user_info.ID_PW (" ID_PW_COL_0_NAME " " ID_PW_COL_0_TYPE ", " ID_PW_COL_1_NAME " " ID_PW_COL_1_TYPE")");
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+    }
+    Mysql_close(conn);
 }
 
 bool check_duplicated_id_from_table_ID_PW(const char * id)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
-
-    char temp_query[300];
-
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.ID_PW WHERE " ID_PW_COL_0_NAME " = '%s'", id); 
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);
-    
-    MYSQL_RES * result = Mysql_store_result(conn);
     bool check = true;
-    if(result != NULL){
-        if(mysql_num_rows(result)>0){
-            check = true;
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
+
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM user_info.ID_PW WHERE " ID_PW_COL_0_NAME " = '%s'", id); 
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+        
+        MYSQL_RES * result = Mysql_store_result(conn);
+        if(result != NULL){
+            if(mysql_num_rows(result)>0){
+                check = true;
+            }
+            else{
+                check = false;
+            }
+            mysql_free_result(result);
         }
-        else{
-            check = false;
-        }
-        mysql_free_result(result);
     }
     Mysql_close(conn);
     return check;
@@ -229,14 +235,16 @@ bool check_duplicated_id_from_table_ID_PW(const char * id)
 void insert_into_table_ID_PW(const char * id, const char * pw)
 {
     MYSQL * conn = Mysql_init();
-    conn = Mysql_real_connect(conn);
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
 
-    char temp_query[300];
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO user_info.ID_PW VALUES('%s', '%s')", id, pw);
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+    }
 
-    memset(temp_query, 0, sizeof(temp_query));
-    snprintf(temp_query, sizeof(temp_query) - 1,"INSERT INTO user_info.ID_PW VALUES('%s', '%s')", id, pw);
-    temp_query[sizeof(temp_query) - 1] = '\0';
-    Mysql_query(conn, temp_query);Mysql_close(conn);
+    Mysql_close(conn);
 }
 
 bool check_valid_id_pw(const char * id, const char * pw)

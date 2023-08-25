@@ -182,7 +182,7 @@ char _sql_e_req(struct MessageERequest * req, char **power_list, uint32_t * powe
         CHECK_SQL_API_ERROR();
         if(check_valid_token_from_LOGIN_TOKEN(id, token)){
             CHECK_SQL_API_ERROR();
-            reate_table_POWER_TO_USER();
+            create_table_POWER_TO_USER();
             CHECK_SQL_API_ERROR();
             select_from_table_POWER_TO_USER(id, power_list, power_number);
             CHECK_SQL_API_ERROR();
