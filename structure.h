@@ -110,6 +110,8 @@ struct MessageHRequest{
     char u_id[U_ID_LENGTH];
 };
 
+
+
 struct MessageHResponse{
     char type;
     char safe_m_err;
