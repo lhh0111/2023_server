@@ -796,6 +796,7 @@ int get_average_hum_now(MYSQL * conn, const char * u_id, struct MessageHResponse
     return err;
 }
 
+
 int get_average_dust_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
 {
     char temp_query[300];
@@ -933,7 +934,7 @@ int get_average_dust_now(MYSQL * conn, const char * u_id, struct MessageHRespons
     }
     else{
         mysql_free_result(result);
-        res->dust_month = 0.0;
+        res->dust_now = 0.0;
 
 
     }
