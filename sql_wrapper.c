@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "define.h"
 #include "unix_wrapper.h"
+#include "sql_error.h"
 
 /*
 static void send_exit_with_sql_error(int sd)
@@ -28,40 +29,45 @@ static void sql_output_error(MYSQL * conn)
     return;
 }
 
-int Mysql_query(MYSQL * conn, const char *q)
+void Mysql_query(MYSQL * conn, const char *q)
 {
     if(mysql_query(conn, q)!=0){
+        set_sql_api_err();
         sql_output_error(conn);
-        return SQL_API_FAIL;
-    }
-    else{
-        return SQL_API_SUCCESS;
     }
 }
 
-int Mysql_store_result(MYSQL * conn, MYSQL_RES ** p_result)
+MYSQL_RES * Mysql_store_result(MYSQL * conn)
 {
-    if((*p_result = mysql_store_result(conn))==NULL){ // 이전 쿼리문이 result set을 주지 않는 쿼리문이거나, 오류가 났을 때 true
-        sql_output_error(conn); // 만약 프로세스 종료 없이 이 함수에서 return한다면 이전 쿼리문의 특성에 의해 NULL이 반환된 것임.
-        return SQL_API_FAIL;
+    MYSQL_RES * temp = mysql_store_result(conn);
+    if(temp==NULL){ 
+        set_sql_api_err();
+        sql_output_error(conn);
     }
-    else{
-        return SQL_API_SUCCESS;
-    }
+    return temp;
 }
 
-int Mysql_init(MYSQL ** p_conn)
+MYSQL * Mysql_init(void)
 {
-    if((*p_conn = mysql_init(NULL))!=NULL){
-        return SQL_API_SUCCESS;
+    MYSQL * temp = mysql_init(NULL);
+    if(temp==NULL){
+        set_sql_api_err();
     }
-    else{
-        return SQL_API_FAIL;
-    }
+    return temp;
 }
 
 void Mysql_close(MYSQL * conn)
 {
     mysql_close(conn);
     mysql_library_end();
+}
+
+
+MYSQL * Mysql_real_connect(MYSQL * mysql)
+{
+    MYSQL * temp = mysql_real_connect(mysql, MYSQL_CONN_HOST, MYSQL_CONN_USER, MYSQL_CONN_PW, NULL, 0, NULL, 0);
+    if(temp == NULL){
+        set_sql_api_err();
+    }
+    return temp;
 }

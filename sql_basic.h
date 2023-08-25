@@ -2,88 +2,77 @@
 #include "structure.h"
 #include "mysql.h"
 
-int create_table_REG(MYSQL * conn);
 
-int delete_from_table_REG(MYSQL * conn, const char * u_id);
+void create_table_REG(void);
+void delete_from_table_REG(const char * u_id);
 
-int insert_into_table_REG(MYSQL * conn, const char * u_id);
+void insert_into_table_REG(const char * u_id);
 
-int create_table_ENERGY(MYSQL * conn, const char * u_id);
-int insert_into_table_ENERGY(MYSQL * conn, const char * u_id, double h2, double h1, double h0, double interval);
+void create_table_ENERGY(const char * u_id);
 
-int  create_table_TEM(MYSQL * conn, const char * u_id);
+void insert_into_table_ENERGY(const char * u_id, double h2, double h1, double h0, double interval);
 
-int insert_into_table_TEM(MYSQL * conn, const char * u_id, double tem);
-int create_table_HUM(MYSQL * conn, const char * u_id);
+void create_table_TEM(const char * u_id);
 
-int insert_into_table_HUM(MYSQL * conn, const char * u_id, double hum);
-int create_table_DUST(MYSQL * conn, const char * u_id);
+void insert_into_table_TEM(const char * u_id, double tem);
+void create_table_HUM(const char * u_id);
 
-int insert_into_table_DUST(MYSQL * conn, const char * u_id, double dust);
-int create_table_RELAY_REQ(MYSQL * conn, const char * u_id);
+void insert_into_table_HUM(const char * u_id, double hum);
 
-int create_table_ID_PW(MYSQL * conn);
+void create_table_DUST(const char * u_id);
 
-int check_duplicated_id_from_table_ID_PW( MYSQL * conn, const char * id, bool * p_check);
+void insert_into_table_DUST(const char * u_id, double dust);
 
+void create_table_RELAY_REQ(const char * u_id);
 
-int insert_into_table_ID_PW(MYSQL * conn, const char * id, const char * pw);
+void create_table_ID_PW(void);
+bool check_duplicated_id_from_table_ID_PW(const char * id);
+void insert_into_table_ID_PW(const char * id, const char * pw);
+bool check_valid_id_pw(const char * id, const char * pw);
+void create_table_LOGIN_TOKEN(void);
 
-int check_valid_id_pw(MYSQL * conn, const char * id, const char * pw, bool * p_check);
+void delete_from_table_LOGIN_TOKEN(const char * id);
 
-int create_table_LOGIN_TOKEN(MYSQL * conn);
-int delete_from_table_LOGIN_TOKEN(MYSQL * conn, const char * id);
+void insert_into_table_LOGIN_TOKEN(const char * id, const char * token_buffer);
 
-int insert_into_table_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer);
+bool check_valid_token_from_LOGIN_TOKEN(const char * id, const char * token_buffer);
+void update_token_from_LOGIN_TOKEN(const char * id);
+void create_table_POWER_TO_USER(void);
 
-int check_valid_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id, const char * token_buffer, bool * p_check);
+void delete_from_table_POWER_TO_USER(const char * u_id);
 
-int update_token_from_LOGIN_TOKEN(MYSQL * conn, const char * id);
+void insert_into_table_POWER_TO_USER(const char * u_id, const char * id);
+bool check_sync_with_REG(const char * u_id);
+void select_from_table_POWER_TO_USER(const char * id, char **power_list, uint32_t * power_number);
 
-int create_table_POWER_TO_USER(MYSQL * conn);
-int delete_from_table_POWER_TO_USER(MYSQL * conn, const char * u_id);
-int insert_into_table_POWER_TO_USER(MYSQL * conn, const char * u_id, const char * id);
+void create_table_POWER_LIST(void);
 
-// u_id의 멀티탭으로부터 30분 이내에 등록 요청이 왔는 지 확인하는 함수
-int check_sync_with_REG(MYSQL * conn, const char * u_id, bool * p_check);
+bool check_valid_u_id(const char * u_id);
 
-int select_from_table_POWER_TO_USER(MYSQL * conn, const char * id, char (**power_list)[U_ID_LENGTH], uint32_t * power_number);
+void insert_into_table_RELAY_REQ(const char * u_id, const char relay_req);
 
-int create_table_POWER_LIST(MYSQL * conn);
+void get_average_power_month(const char * u_id, struct MessageGResponse * res);
 
-int check_valid_u_id(MYSQL * conn, const char * u_id, bool * p_check);
+void get_average_power_week(const char * u_id, struct MessageGResponse * res);
+void get_average_power_day(const char * u_id, struct MessageGResponse * res);
 
-int insert_into_table_RELAY_REQ(MYSQL * conn, const char * u_id, const char relay_req);
+void get_average_power_now(const char * u_id, struct MessageGResponse * res);
+void get_average_tem_month(const char * u_id, struct MessageHResponse * res);
+void get_average_tem_week(const char * u_id, struct MessageHResponse * res);
+void get_average_tem_day(const char * u_id, struct MessageHResponse * res);
 
-int get_average_power_month(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+void get_average_tem_now(const char * u_id, struct MessageHResponse * res);
+void get_average_hum_month(const char * u_id, struct MessageHResponse * res);
+void get_average_hum_week(const char * u_id, struct MessageHResponse * res);
 
-int get_average_power_week(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+void get_average_hum_day(const char * u_id, struct MessageHResponse * res);
+void get_average_hum_now(const char * u_id, struct MessageHResponse * res);
+void get_average_dust_month(const char * u_id, struct MessageHResponse * res);
 
-int get_average_power_day(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+void get_average_dust_week(const char * u_id, struct MessageHResponse * res);
 
-int get_average_power_now(MYSQL * conn, const char * u_id, struct MessageGResponse * res);
+void get_average_dust_day(const char * u_id, struct MessageHResponse * res);
 
-int get_average_tem_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
+void get_average_dust_now(const char * u_id, struct MessageHResponse * res);
 
-int get_average_tem_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-int get_average_tem_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-int get_average_tem_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-int get_average_hum_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_hum_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_hum_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_hum_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_dust_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_dust_week(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-int get_average_dust_day(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-
-int get_average_dust_now(MYSQL * conn, const char * u_id, struct MessageHResponse * res);
-
-
-int get_relay_req(MYSQL * conn, const char * u_id, char * p_relay_req);
+char get_relay_req(const char * u_id);

@@ -1,5 +1,9 @@
 #pragma once
 
+#define MYSQL_CONN_HOST "localhost"
+#define MYSQL_CONN_USER "root"
+#define MYSQL_CONN_PW ""
+
 #define DATA_BUFFER_LENGTH 10
 //
 #define SAFE_M_SUCCESS '0'

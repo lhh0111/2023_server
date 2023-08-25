@@ -72,7 +72,7 @@ void protocol_implementation(int sd){
       struct MessageERequest req;
       _get_req(sd, &req, sizeof(req));
       if(check_req_e_validation(&req)){
-         char (*power_list)[8] = NULL;
+         char *power_list = NULL;
          struct MessageEResponse res;
          uint32_t power_number = 0;
          res.safe_m_err = _sql_e_req(&req, &power_list, &power_number);
