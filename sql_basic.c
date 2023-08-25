@@ -961,7 +961,8 @@ int get_relay_req(MYSQL * conn, const char * u_id, char * p_relay_req)
         }
     }
     else{
-        *p_relay_req = '8';
+        *p_relay_req = RELAY_NO_REQ;
     }
+  
     return err;
 }
