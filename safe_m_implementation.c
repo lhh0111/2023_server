@@ -120,8 +120,10 @@ void protocol_implementation(int sd){
       _get_req(sd, &req, sizeof(req));
       if(check_req_h_validation(&req)){
          struct MessageHResponse res;
+         sizeof(res);
          res.safe_m_err = _sql_h_req(&req, &res);
          res.type = message_type;
+         printf("%f %f %f\n", res.dust_month, res.dust_week, res.dust_now);
          _send_res(sd, &res, sizeof(res));
          printf("m_type : %c, safe_m_err : %d\r\n", message_type, res.safe_m_err);
       }

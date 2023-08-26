@@ -10,5 +10,4 @@ int _get_req(int sd, void * req, int size)
         Read(sd, temp, 1);
         temp++;
     }
-    return 0;
 }
