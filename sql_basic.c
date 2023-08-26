@@ -961,12 +961,7 @@ void get_average_hum_now(const char * u_id, struct MessageHResponse * res)
     Mysql_close(conn);
 }
 
-<<<<<<< HEAD
 void get_average_dust_month(const char * u_id, struct MessageHResponse * res)
-=======
-
-int get_average_dust_month(MYSQL * conn, const char * u_id, struct MessageHResponse * res)
->>>>>>> 53799736b7b2b6484fd0410ab51d390332008adb
 {
     MYSQL * conn = Mysql_init();
     conn = Mysql_real_connect(conn);
@@ -1112,17 +1107,10 @@ void get_average_dust_now(const char * u_id, struct MessageHResponse * res)
             res->dust_now = now/(double)num_rows; // 평균 얻기
 
 
-<<<<<<< HEAD
         }
         else{
             mysql_free_result(result);
-            res->dust_month = 0.0;
-=======
-    }
-    else{
-        mysql_free_result(result);
-        res->dust_now = 0.0;
->>>>>>> 53799736b7b2b6484fd0410ab51d390332008adb
+            res->dust_now = 0.0;
 
 
         }
@@ -1140,7 +1128,6 @@ char get_relay_req(const char * u_id)
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1,"SELECT * FROM power_info.%s_RELAY_REQ", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
-<<<<<<< HEAD
     Mysql_query(conn, temp_query);
 
     MYSQL_RES * result = Mysql_store_result(conn);
@@ -1156,23 +1143,4 @@ char get_relay_req(const char * u_id)
     }
     Mysql_close(conn);
     return relay_req;
-=======
-    int err;
-    MYSQL_QUERY(conn, temp_query, err);
-
-    MYSQL_RES * result;
-    MYSQL_STORE_RESULT(conn, result, err);
-    int num_rows = 0;
-    if((num_rows = mysql_num_rows(result))  !=  0){
-        MYSQL_ROW row;
-        while((row = mysql_fetch_row(result))!=NULL){
-            *p_relay_req = row[0][0];
-        }
-    }
-    else{
-        *p_relay_req = RELAY_NO_REQ;
-    }
-  
-    return err;
->>>>>>> 53799736b7b2b6484fd0410ab51d390332008adb
 }
