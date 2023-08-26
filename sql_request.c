@@ -182,6 +182,8 @@ char _sql_e_req(struct MessageERequest * req, char **power_list, uint32_t * powe
         CHECK_SQL_API_ERROR();
         if(check_valid_token_from_LOGIN_TOKEN(id, token)){
             CHECK_SQL_API_ERROR();
+            update_token_from_LOGIN_TOKEN(id);
+            CHECK_SQL_API_ERROR();
             create_table_POWER_TO_USER();
             CHECK_SQL_API_ERROR();
             select_from_table_POWER_TO_USER(id, power_list, power_number);
@@ -234,6 +236,9 @@ char _sql_j_req(struct MessageJRequest * req)
         return SAFE_M_INVALID_TOKEN;
     }
 
+    update_token_from_LOGIN_TOKEN(id);
+    CHECK_SQL_API_ERROR();
+
     // + u_id 확인
 
     create_table_POWER_LIST();
@@ -246,11 +251,14 @@ char _sql_j_req(struct MessageJRequest * req)
         return SAFE_M_U_ID_NOT_EXISTS;
     }
 
+    /*
     create_table_REG();
     CHECK_SQL_API_ERROR();
     bool reg_sync=check_sync_with_REG(u_id);
     CHECK_SQL_API_ERROR();
+    */
 
+    bool reg_sync = true;
     if(!reg_sync){
         return SAFE_M_NOT_SYNC_WITH_REG;
     }
@@ -303,6 +311,8 @@ char _sql_f_req(struct MessageFRequest * req)
     if(!valid_token){
         return SAFE_M_INVALID_TOKEN;
     }
+    update_token_from_LOGIN_TOKEN(id);
+    CHECK_SQL_API_ERROR();
 
     // + u_id 확인
 
@@ -363,6 +373,8 @@ char _sql_g_req(struct MessageGRequest * req, struct MessageGResponse * res)
     if(!valid_token){
         return SAFE_M_INVALID_TOKEN;
     }
+    update_token_from_LOGIN_TOKEN(id);
+    CHECK_SQL_API_ERROR();
 
     // + u_id 확인
 
@@ -428,6 +440,8 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
     if(!valid_token){
         return SAFE_M_INVALID_TOKEN;
     }
+    update_token_from_LOGIN_TOKEN(id);
+    CHECK_SQL_API_ERROR();
 
     // + u_id 확인
 
@@ -518,6 +532,8 @@ char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
     if(!valid_token){
         return SAFE_M_INVALID_TOKEN;
     }
+    update_token_from_LOGIN_TOKEN(id);
+    CHECK_SQL_API_ERROR();
 
     // + u_id 확인
 
