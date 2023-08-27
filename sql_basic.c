@@ -573,9 +573,9 @@ void get_average_power_week(const char * u_id, struct MessageGResponse * res)
             hole_0 += strtod(row[2], &temp);
         }
         mysql_free_result(result);
-        res->hole_2_month = hole_2/WEEK_TO_SEC; // 평균전력 얻기
-        res->hole_1_month = hole_1/WEEK_TO_SEC;
-        res->hole_0_month = hole_0/WEEK_TO_SEC;
+        res->hole_2_week = hole_2/WEEK_TO_SEC; // 평균전력 얻기
+        res->hole_1_week = hole_1/WEEK_TO_SEC;
+        res->hole_0_week = hole_0/WEEK_TO_SEC;
     }
     
     Mysql_close(conn);
@@ -605,9 +605,9 @@ void get_average_power_day(const char * u_id, struct MessageGResponse * res)
             hole_0 += strtod(row[2], &temp);
         }
         mysql_free_result(result);
-        res->hole_2_month = hole_2/DAY_TO_SEC; // 평균전력 얻기
-        res->hole_1_month = hole_1/DAY_TO_SEC;
-        res->hole_0_month = hole_0/DAY_TO_SEC;
+        res->hole_2_day = hole_2/DAY_TO_SEC; // 평균전력 얻기
+        res->hole_1_day = hole_1/DAY_TO_SEC;
+        res->hole_0_day = hole_0/DAY_TO_SEC;
     }
     
     Mysql_close(conn);
@@ -637,9 +637,9 @@ void get_average_power_now(const char * u_id, struct MessageGResponse * res)
             hole_0 += strtod(row[2], &temp);
         }
         mysql_free_result(result);
-        res->hole_2_month = hole_2/MINUTE_TO_SEC; // 평균전력 얻기
-        res->hole_1_month = hole_1/MINUTE_TO_SEC;
-        res->hole_0_month = hole_0/MINUTE_TO_SEC;
+        res->hole_2_now = hole_2/MINUTE_TO_SEC; // 평균전력 얻기
+        res->hole_1_now = hole_1/MINUTE_TO_SEC;
+        res->hole_0_now = hole_0/MINUTE_TO_SEC;
     }
     
     Mysql_close(conn);
@@ -661,7 +661,6 @@ void get_average_tem_month(const char * u_id, struct MessageHResponse * res)
 
     MYSQL_RES * result = Mysql_store_result(conn);
     if(result!=NULL){
-
         uint64_t num_rows = 0;
         if((num_rows = mysql_num_rows(result))!=0){
             double month = 0.0;
@@ -673,7 +672,6 @@ void get_average_tem_month(const char * u_id, struct MessageHResponse * res)
             mysql_free_result(result);
 
             res->tem_month = month/(double)num_rows; // 평균 얻기
-
         }
         else{
             mysql_free_result(result);
@@ -781,7 +779,7 @@ void get_average_tem_now(const char * u_id, struct MessageHResponse * res)
     temp_query[sizeof(temp_query) - 1] = '\0';
     Mysql_query(conn, temp_query);
 
-    MYSQL_RES * result;
+    MYSQL_RES * result = Mysql_store_result(conn);
     if(result != NULL){
         uint64_t num_rows = 0;
         if((num_rows = mysql_num_rows(result))!=0){

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "sql_wrapper.h"
 #include "sql_error.h"
+#include <stdio.h>
 
 #define CHECK_SQL_API_ERROR() if(get_sql_api_err()!=0){\
                                 return SAFE_M_SQL_API_FAIL;\
@@ -455,7 +456,6 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
         return SAFE_M_U_ID_NOT_EXISTS;
     }
 
-
     // + TEM, HUM, DUST 테이블 생성
     create_table_TEM(u_id);
     CHECK_SQL_API_ERROR();
@@ -473,7 +473,6 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
     CHECK_SQL_API_ERROR();
     get_average_tem_now(u_id, res);
     CHECK_SQL_API_ERROR();
-
     get_average_hum_month(u_id, res);
     CHECK_SQL_API_ERROR();
     get_average_hum_week(u_id, res);
@@ -482,7 +481,6 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
     CHECK_SQL_API_ERROR();
     get_average_hum_now(u_id, res);
     CHECK_SQL_API_ERROR();
-
     get_average_dust_month(u_id, res);
     CHECK_SQL_API_ERROR();
     get_average_dust_week(u_id, res);
