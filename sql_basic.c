@@ -1142,3 +1142,29 @@ char get_relay_req(const char * u_id)
     Mysql_close(conn);
     return relay_req;
 }
+
+bool check_user_registered_power(const char * u_id, const char * id)
+{
+    MYSQL * conn = Mysql_init();
+    bool check = false;
+
+    if(Mysql_real_connect(conn)){
+        char temp_query[300];
+        memset(temp_query, 0, sizeof(temp_query));
+        snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_0_NAME" = %s AND "POWER_TO_USER_COL_1_NAME" = %s", u_id, id);
+        temp_query[sizeof(temp_query) - 1] = '\0';
+        Mysql_query(conn, temp_query);
+        MYSQL_RES * result = Mysql_store_result(conn);
+        if(result!=NULL){
+            uint64_t num_rows = mysql_num_rows(result);
+            if(num_rows != 0){
+                check = true;
+            }
+            else{
+                check = false;
+            }
+        }
+    }
+    Mysql_close(conn);
+    return check;
+}

@@ -76,3 +76,5 @@ void get_average_dust_day(const char * u_id, struct MessageHResponse * res);
 void get_average_dust_now(const char * u_id, struct MessageHResponse * res);
 
 char get_relay_req(const char * u_id);
+
+bool check_user_registered_power(const char * u_id, const char * id);

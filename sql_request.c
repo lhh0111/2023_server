@@ -326,7 +326,12 @@ char _sql_f_req(struct MessageFRequest * req)
     if(!valid_u_id){
         return SAFE_M_U_ID_NOT_EXISTS;
     }
-
+    create_table_POWER_TO_USER();
+    CHECK_SQL_API_ERROR();
+    bool user_registered_power = check_user_registered_power(u_id, id);
+    if(!user_registered_power){
+        return SAFE_M_NOT_POWER_OWNER;
+    }
     // + RELAY_REQ 테이블 생성
     create_table_RELAY_REQ(u_id);
     CHECK_SQL_API_ERROR();
@@ -388,7 +393,12 @@ char _sql_g_req(struct MessageGRequest * req, struct MessageGResponse * res)
     if(!valid_u_id){
         return SAFE_M_U_ID_NOT_EXISTS;
     }
-
+    create_table_POWER_TO_USER();
+    CHECK_SQL_API_ERROR();
+    bool user_registered_power = check_user_registered_power(u_id, id);
+    if(!user_registered_power){
+        return SAFE_M_NOT_POWER_OWNER;
+    }
     // + ENERGY 테이블 생성
     create_table_ENERGY(u_id);
     CHECK_SQL_API_ERROR();
@@ -454,6 +464,13 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
 
     if(!valid_u_id){
         return SAFE_M_U_ID_NOT_EXISTS;
+    }
+
+    create_table_POWER_TO_USER();
+    CHECK_SQL_API_ERROR();
+    bool user_registered_power = check_user_registered_power(u_id, id);
+    if(!user_registered_power){
+        return SAFE_M_NOT_POWER_OWNER;
     }
 
     // + TEM, HUM, DUST 테이블 생성
@@ -544,7 +561,12 @@ char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
     if(!valid_u_id){
         return SAFE_M_U_ID_NOT_EXISTS;
     }
-
+    create_table_POWER_TO_USER();
+    CHECK_SQL_API_ERROR();
+    bool user_registered_power = check_user_registered_power(u_id, id);
+    if(!user_registered_power){
+        return SAFE_M_NOT_POWER_OWNER;
+    }
     create_table_RELAY_REQ(u_id);
     CHECK_SQL_API_ERROR();
     res->relay_req = get_relay_req(u_id);
