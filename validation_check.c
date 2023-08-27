@@ -3,7 +3,7 @@
 #include <string.h>
 #include "define.h"
 #include "structure.h"
-
+#include <stdio.h>
 // 인자로 들어온 char가 의미하는 문자가 id에 들어가기에 적합한지를 문자들의 아스키 코드를 사용하여 테스트함. 
 static bool check_char_in_id_validation(char c)
 {
@@ -113,6 +113,7 @@ bool check_req_c_validation(struct MessageCRequest * req)
     memcpy(id, req->id, sizeof(id) - 1);
     id[sizeof(id) - 1] = '\0';
 
+    printf("id : %s \r\n", id);
     if(!check_id_validation(id)){
         return false;
     }
@@ -121,6 +122,7 @@ bool check_req_c_validation(struct MessageCRequest * req)
     memcpy(pw, req->pw, sizeof(pw) - 1);
     pw[sizeof(pw) - 1] = '\0';
 
+    printf("pw : %s \r\n", pw);
     if(!check_pw_validation(pw)){
         return false;
     }

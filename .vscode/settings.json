@@ -10,7 +10,8 @@
         "stddef.h": "c",
         "stdint.h": "c",
         "unix_wrapper.h": "c",
-        "structure.h": "c"
+        "structure.h": "c",
+        "stdio.h": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
