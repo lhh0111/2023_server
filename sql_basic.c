@@ -1151,7 +1151,7 @@ bool check_user_registered_power(const char * u_id, const char * id)
     if(Mysql_real_connect(conn)){
         char temp_query[300];
         memset(temp_query, 0, sizeof(temp_query));
-        snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_0_NAME" = %s AND "POWER_TO_USER_COL_1_NAME" = %s", u_id, id);
+        snprintf(temp_query, sizeof(temp_query) - 1, "SELECT * FROM user_info.POWER_TO_USER WHERE "POWER_TO_USER_COL_0_NAME" = '%s' AND "POWER_TO_USER_COL_1_NAME" = '%s'", u_id, id);
         temp_query[sizeof(temp_query) - 1] = '\0';
         Mysql_query(conn, temp_query);
         MYSQL_RES * result = Mysql_store_result(conn);

@@ -329,6 +329,7 @@ char _sql_f_req(struct MessageFRequest * req)
     create_table_POWER_TO_USER();
     CHECK_SQL_API_ERROR();
     bool user_registered_power = check_user_registered_power(u_id, id);
+    CHECK_SQL_API_ERROR();
     if(!user_registered_power){
         return SAFE_M_NOT_POWER_OWNER;
     }
@@ -396,6 +397,7 @@ char _sql_g_req(struct MessageGRequest * req, struct MessageGResponse * res)
     create_table_POWER_TO_USER();
     CHECK_SQL_API_ERROR();
     bool user_registered_power = check_user_registered_power(u_id, id);
+    CHECK_SQL_API_ERROR();
     if(!user_registered_power){
         return SAFE_M_NOT_POWER_OWNER;
     }
@@ -469,6 +471,7 @@ char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res)
     create_table_POWER_TO_USER();
     CHECK_SQL_API_ERROR();
     bool user_registered_power = check_user_registered_power(u_id, id);
+    CHECK_SQL_API_ERROR();
     if(!user_registered_power){
         return SAFE_M_NOT_POWER_OWNER;
     }
@@ -564,6 +567,7 @@ char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
     create_table_POWER_TO_USER();
     CHECK_SQL_API_ERROR();
     bool user_registered_power = check_user_registered_power(u_id, id);
+    CHECK_SQL_API_ERROR();
     if(!user_registered_power){
         return SAFE_M_NOT_POWER_OWNER;
     }
