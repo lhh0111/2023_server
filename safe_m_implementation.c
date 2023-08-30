@@ -160,5 +160,8 @@ void protocol_implementation(int sd){
          printf("m_type : %c, validation check failed..\r\n", message_type);
       }
    }
+   else{
+      printf("m_type : %c, type failed", message_type);
+   }
    return;
 }
