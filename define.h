@@ -14,7 +14,7 @@
 #define SAFE_M_U_ID_NOT_EXISTS '5'
 #define SAFE_M_NOT_POWER_OWNER '6'
 #define SAFE_M_NOT_SYNC_WITH_REG '7'
-#define SAFE_M_SQL_API_FAIL '8'
+#define SAFE_M_SQL_REQ_FAIL '8'
 //
 #define MONTH_TO_SEC 2629800.0
 #define WEEK_TO_SEC 604800.0

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "define.h"
 #include "unix_wrapper.h"
-#include "sql_error.h"
+#include "sql_api_error.h"
 
 /*
 static void send_exit_with_sql_error(int sd)
