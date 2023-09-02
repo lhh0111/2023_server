@@ -1,8 +1,8 @@
 #pragma once
 
-#define MYSQL_CONN_HOST "localhost"
+#define MYSQL_CONN_HOST "database-1.calntuogtly7.ap-northeast-2.rds.amazonaws.com"
 #define MYSQL_CONN_USER "root"
-#define MYSQL_CONN_PW ""
+#define MYSQL_CONN_PW "2023project"
 
 #define DATA_BUFFER_LENGTH 10
 //
