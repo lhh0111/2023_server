@@ -32,7 +32,7 @@ char _sql_a_req(struct MessageARequest * req)
 
 /* 요청메시지 B에 있는 내용들을 데이터 베이스에 저장함. U_ID의 RELAY_REQ 테이블에서 릴레이 모듈 제어 예약 정보를 얻어 *relay_status에 저장하는 함수
 mysql 작업 중 오류가 발생하면 SQL_ERROR를 반환함. */
-char _sql_b_req(struct MessageBRequest * req, struct MessageBResponse * res)
+char _sql_b_req(struct MessageBRequest * req)
 {
     char u_id[sizeof(req->u_id) + 1];
     memcpy(u_id, req->u_id, sizeof(req->u_id));
@@ -44,11 +44,15 @@ char _sql_b_req(struct MessageBRequest * req, struct MessageBResponse * res)
     
     if(check_valid_u_id(u_id)){
         CHECK_SQL_BASIC_ERROR();
+
+        /*
         // ENERGY
         create_table_ENERGY(u_id);
         CHECK_SQL_BASIC_ERROR();
         insert_into_table_ENERGY(u_id, req->hole_2_energy, req->hole_1_energy, req->hole_0_energy, req->energy_interval);
         CHECK_SQL_BASIC_ERROR();
+        */
+
         // TEMPERATURE
         create_table_TEM(u_id);
         CHECK_SQL_BASIC_ERROR();
@@ -65,13 +69,13 @@ char _sql_b_req(struct MessageBRequest * req, struct MessageBResponse * res)
         create_table_DUST(u_id);CHECK_SQL_BASIC_ERROR();
         insert_into_table_DUST(u_id, req->dust);CHECK_SQL_BASIC_ERROR();
         
-    
+        /* 
         // get relay_request information
         create_table_RELAY_REQ( u_id);
         CHECK_SQL_BASIC_ERROR();
         res->relay_req = get_relay_req(u_id);
         CHECK_SQL_BASIC_ERROR();
-
+        */
     }
     else{
         safe_m_err = SAFE_M_U_ID_NOT_EXISTS;
@@ -577,4 +581,29 @@ char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
     CHECK_SQL_BASIC_ERROR();
     
     return SAFE_M_SUCCESS;
+}
+
+char _sql_n_req(struct MessageNRequest req, struct MessageNResponse res)
+{
+    char u_id[sizeof(req->u_id) + 1];
+    memcpy(u_id, req->u_id, sizeof(req->u_id));
+    u_id[sizeof(u_id) - 1] = '\0';
+
+    char safe_m_err = SAFE_M_SUCCESS;
+    create_table_POWER_LIST();
+    CHECK_SQL_BASIC_ERROR();
+    
+    if(check_valid_u_id(u_id)){
+        CHECK_SQL_BASIC_ERROR();
+
+        // get relay_request information
+        create_table_RELAY_REQ(u_id);
+        CHECK_SQL_BASIC_ERROR();
+        res->relay_req = get_relay_req(u_id);
+        CHECK_SQL_BASIC_ERROR();
+    }
+    else{
+        safe_m_err = SAFE_M_U_ID_NOT_EXISTS;
+    }
+    return safe_m_err;
 }

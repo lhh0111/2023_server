@@ -116,5 +116,7 @@
 #define MESSAGE_H_START '8'
 #define MESSAGE_I_START '9'
 #define MESSAGE_J_START 'A'
+#define MESSAGE_N_START 'E'
+
 
 #define RELAY_NO_REQ '8'

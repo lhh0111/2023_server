@@ -35,7 +35,7 @@ void protocol_implementation(int sd){
       struct MessageBResponse res;
       res.safe_m_err = _sql_b_req(&req, &res);
       res.type = message_type;
-      res.end = MESSAGE_B_LAST;
+      //res.end = MESSAGE_B_LAST;
       _send_res(sd, &res, sizeof(res));
       printf("m_type : %c, safe_m_err : %d\r\n", message_type, res.safe_m_err);
    }
@@ -159,6 +159,15 @@ void protocol_implementation(int sd){
       else{
          printf("m_type : %c, validation check failed..\r\n", message_type);
       }
+   }
+   else if(message_type==MESSAGE_N_START){
+      struct MessageNRequest req={{0}};
+      _get_req(sd, &req, sizeof(req));
+      struct MessageNResponse res;
+      res.safe_m_err = _sql_n_req(&req, &res);
+      res.type = message_type;
+      _send_res(sd, &res, sizeof(res));
+      printf("m_type : %c, safe_m_err : %d\r\n", message_type, res.safe_m_err);
    }
    else{
       printf("m_type : %c, type failed", message_type);

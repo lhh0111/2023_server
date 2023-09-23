@@ -17,11 +17,12 @@ struct MessageAResponse{
 
 struct MessageBRequest{
     char u_id[U_ID_LENGTH];
+    /*
     double hole_2_energy;
     double hole_1_energy;
     double hole_0_energy;
     double energy_interval;
-
+    */
     double tem;
 
     double hum;
@@ -32,8 +33,10 @@ struct MessageBRequest{
 struct MessageBResponse{
     char type;
     char safe_m_err;
+    /*
     char relay_req;
     char end;
+    */
 };
 
 struct MessageCRequest{
@@ -150,5 +153,15 @@ struct MessageJRequest{
 struct MessageJResponse{
     char start;
     char safe_m_err;
+};
+
+struct MessageNRequest{
+    char u_id[U_ID_LENGTH];
+};
+
+struct MessageNResponse{
+    char type;
+    char safe_m_err;
+    char relay_req;
 };
 #pragma pack(pop)
