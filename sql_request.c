@@ -583,7 +583,7 @@ char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res)
     return SAFE_M_SUCCESS;
 }
 
-char _sql_n_req(struct MessageNRequest req, struct MessageNResponse res)
+char _sql_n_req(struct MessageNRequest * req, struct MessageNResponse * res)
 {
     char u_id[sizeof(req->u_id) + 1];
     memcpy(u_id, req->u_id, sizeof(req->u_id));

@@ -34,4 +34,4 @@ char _sql_g_req(struct MessageGRequest * req, struct MessageGResponse * res);
 char _sql_h_req(struct MessageHRequest * req, struct MessageHResponse * res);
 
 char _sql_i_req(struct MessageIRequest * req, struct MessageIResponse * res);
-char _sql_n_req(struct MessageNRequest, struct MessageNResponse);
+char _sql_n_req(struct MessageNRequest * req, struct MessageNResponse * res);

@@ -33,7 +33,7 @@ void protocol_implementation(int sd){
       struct MessageBRequest req={{0}};
       _get_req(sd, &req, sizeof(req));
       struct MessageBResponse res;
-      res.safe_m_err = _sql_b_req(&req, &res);
+      res.safe_m_err = _sql_b_req(&req);
       res.type = message_type;
       //res.end = MESSAGE_B_LAST;
       _send_res(sd, &res, sizeof(res));
