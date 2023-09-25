@@ -648,7 +648,7 @@ void get_average_power_now(const char * u_id, struct MessageGResponse * res)
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "ENERGY_COL_0_NAME", "ENERGY_COL_1_NAME", "ENERGY_COL_2_NAME" FROM power_info.%s_ENERGY WHERE "
-    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+    ENERGY_COL_4_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 10 SECOND) AND NOW()", u_id);
     temp_query[sizeof(temp_query) - 1] = '\0';
     Mysql_query(conn, temp_query);CHECK_SQL_API_ERROR_VOID(conn);
 
@@ -800,7 +800,7 @@ void get_average_tem_now(const char * u_id, struct MessageHResponse * res)
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "TEM_COL_0_NAME" FROM power_info.%s_TEM WHERE "
-    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+    TEM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 10 SECOND) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
     Mysql_query(conn, temp_query);CHECK_SQL_API_ERROR_VOID(conn);
@@ -953,7 +953,7 @@ void get_average_hum_now(const char * u_id, struct MessageHResponse * res)
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "HUM_COL_0_NAME" FROM power_info.%s_HUM WHERE "
-    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+    HUM_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 10 SECOND) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
     Mysql_query(conn, temp_query);CHECK_SQL_API_ERROR_VOID(conn);
@@ -1111,7 +1111,7 @@ void get_average_dust_now(const char * u_id, struct MessageHResponse * res)
 
     memset(temp_query, 0, sizeof(temp_query));
     snprintf(temp_query, sizeof(temp_query) - 1, "SELECT "DUST_COL_0_NAME" FROM power_info.%s_DUST WHERE "
-    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 1 MINUTE) AND NOW()", u_id);
+    DUST_COL_1_NAME" BETWEEN DATE_SUB(NOW(), INTERVAL 10 SECOND) AND NOW()", u_id);
 
     temp_query[sizeof(temp_query) - 1] = '\0';
     Mysql_query(conn, temp_query);CHECK_SQL_API_ERROR_VOID(conn);
